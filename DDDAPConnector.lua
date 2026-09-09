@@ -107,7 +107,8 @@ MemoryAddresses = { --Primary memory addresses to reference
   lboard = {0x11992780, 0x11992000},
   boardRewards = {0x10986D60, 0x109865E0},
   expTable = {0x7B2A94, 0x7B2C34},
-  subMenu = {0xA9B2F4, 0xA9AB74}
+  subMenu = {0xA9B2F4, 0xA9AB74},
+  emblems = {0xA4C568, 0xA4BDE8}
 }
 
 --Link board info:
@@ -158,7 +159,8 @@ Configs = {
   FightKyroo = 0,
   LocalItemNotifs = 0,
   RemoteItemNotifs = 0,
-  VanillaLevels = false
+  VanillaLevels = false,
+  EmblemReqs = 0
 }
 
 ItemOverwrite = {
@@ -169,34 +171,33 @@ ItemOverwrite = {
   dummyId = {0x13, 0x08},
   dummyName = "AP Item",
   --Stats Riku
-  food16NameAddr = {0x10944ABC},
-  food16DescAddr = {0x10955C4C},
-  food17NameAddr = {0x10944AD6},
-  food17DescAddr = {0x10955C70},
-  food18NameAddr = {0x10944AF0},
-  food18DescAddr = {0x10955C94},
-  food19NameAddr = {0x10944B0A},
-  food19DescAddr = {0x10955CB8},
-  food20NameAddr = {0x10944B24},
-  food20DescAddr = {0x10955CDC},
-  recipe55NameAddr = {0x10943E58},
-  recipe55DescAddr = {0x1095299E},
-  key36NameAddr = {0x1094420C},
-  key37NameAddr = {0x10944224},
-  key38NameAddr = {0x1094423C},
-  key39NameAddr = {0x10944254},
-  key40NameAddr = {0x1094426C},
-  --Stats Riku
+  food16NameAddr = {0x10944ABC, 0x1094433C},
+  food16DescAddr = {0x10955C4C, 0x109554CC},
+  food17NameAddr = {0x10944AD6, 0x10944356},
+  food17DescAddr = {0x10955C70, 0x109554F0},
+  food18NameAddr = {0x10944AF0, 0x10944370},
+  food18DescAddr = {0x10955C94, 0x10955514},
+  food19NameAddr = {0x10944B0A, 0x1094438A},
+  food19DescAddr = {0x10955CB8, 0x10955538},
+  food20NameAddr = {0x10944B24, 0x109443A4},
+  food20DescAddr = {0x10955CDC, 0x1095555C},
+  recipe55NameAddr = {0x10943E58, 0x109436D8},
+  recipe55DescAddr = {0x1095299E, 0x1095221E},
+  key36NameAddr = {0x1094420C, 0x10943A8C},
+  key37NameAddr = {0x10944224, 0x10943AA4},
+  key38NameAddr = {0x1094423C, 0x10943ABC},
+  key39NameAddr = {0x10944254, 0x10943AD4},
+  key40NameAddr = {0x1094426C, 0x10943AEC},
   recipeNameAddr = {0x10944CD6, 0x10944556}, --TOY 18
   recipeDescAddr = {0x109561FC, 0x10955A7C},
   --toy17NameAddr = {},
   --toy17DescAddr = {},
-  toy16NameAddr = {0x10944CBA, 0x1094543A}, --TOY 16
-  toy16DescAddr = {0x109561CC, 0x1095694C},
+  toy16NameAddr = {0x10944CBA, 0x1094453A}, --TOY 16
+  toy16DescAddr = {0x109561CC, 0x10955A4C},
   --toy15NameAddr = {},
   --toy15DescAddr = {},
-  --toy14NameAddr = {},
-  --toy14DescAddr = {},
+  toy14NameAddr = {0x10944C9E,0x1094451E},
+  toy14DescAddr = {0x1095619C,0x10955A1C},
 
   levelUpTxtAddr = {0x10946494, 0x10945D14},
   strIncreasedTxt = {0x10946494, 0x10945D14},
@@ -555,6 +556,7 @@ function RunReports()
     
     ItemHandler:CheckMacguffins() --Gets recent key item results
     local _recipeCnt = #ItemHandler.State.Recipes
+    local _embCnt = ItemHandler.State.Emblems
 
     if Configs.Goal == 0 then --Final boss goal
       local _conditionsMet = 0
@@ -562,10 +564,12 @@ function RunReports()
       local _meowTxt = "Meow Wow: NOT FOUND |"
       local _batTxt = "Komory Bat: NOT FOUND |"
       local _sigilTxt = "Recusant Sigil: NOT FOUND |"
-      local _reqTxt = "Required Recipes: "..tostring(_recipeCnt).."/"..tostring(Configs.RecipeReqs)
+      local _reqTxt = "Required Recipes: "..tostring(_recipeCnt).."/"..tostring(Configs.RecipeReqs).." |"
+      local _embTxt = ""
+
       local _goTxt = ""
       if _recipeCnt >= Configs.RecipeReqs then
-        _reqTxt = _reqTxt.." [COMPLETE]"
+        _reqTxt = _reqTxt.." [COMPLETE] |"
         _conditionsMet = _conditionsMet + 1
       end
       if ItemHandler.State.HasCat then
@@ -580,8 +584,17 @@ function RunReports()
         _sigilTxt = "Recusant Sigil: OBTAINED |"
         _conditionsMet = _conditionsMet + 1
       end
+      if Configs.EmblemReqs > 0 then
+        _embTxt = "Required Emblems: "..tostring(_embCnt).."/"..tostring(Configs.EmblemReqs)
+        if _embCnt >= Configs.EmblemReqs then
+          _embTxt = _embTxt.." [COMPLETE]"
+          _conditionsMet = _conditionsMet + 1
+        end
+      else
+        _conditionsMet = _conditionsMet + 1
+      end
 
-      if _conditionsMet == 4 then --Go mode available
+      if _conditionsMet == 5 then --Go mode available
         --Verify twtnw access
         local _hasTwtnw = true
         if ReadByte(WorldFlags.theWorldThatNeverWas.sora.unlocked[gameVer]) == 0x00 then
@@ -601,7 +614,7 @@ function RunReports()
         end
       end
 
-       writeTxtToGame(ItemOverwrite.glossaryDesc[gameVer], _goalTxt.._meowTxt.._batTxt.._sigilTxt.._reqTxt.._goTxt, 3)
+       writeTxtToGame(ItemOverwrite.glossaryDesc[gameVer], _goalTxt.._meowTxt.._batTxt.._sigilTxt.._reqTxt.._embTxt.._goTxt, 3)
 
     elseif Configs.Goal == 1 then --Superboss goal
       local _conditionsMet = 0
@@ -609,9 +622,19 @@ function RunReports()
       local _goalTxt = "GOAL: Defeat Julius. ||Requirements: |"
       local _reqTxt = "Required Recipes: "..tostring(_recipeCnt).."/"..tostring(Configs.RecipeReqs)
       local _portalTxt = "||Secret Portals to Complete: |"
+      local _embTxt = ""
       local _goTxt = ""
       if _recipeCnt >= Configs.RecipeReqs then
         _reqTxt = _reqTxt.." [COMPLETE]"
+        _conditionsMet = _conditionsMet + 1
+      end
+      if Configs.EmblemReqs > 0 then
+        _embTxt = "Required Emblems: "..tostring(_embCnt).."/"..tostring(Configs.EmblemReqs)
+        if _embCnt >= Configs.EmblemReqs then
+          _embTxt = _embTxt.." [COMPLETE]"
+          _conditionsMet = _conditionsMet + 1
+        end
+      else
         _conditionsMet = _conditionsMet + 1
       end
       if Configs.Character < 2 then --Sora portals
@@ -669,10 +692,10 @@ function RunReports()
         _conditionsMet = _conditionsMet + 1
       end
 
-      if _conditionsMet == 2 then --Can fight Julius
+      if _conditionsMet == 3 then --Can fight Julius
         _goTxt = "| Julius can be found in the manhole after |clearing TT2."
       end
-      writeTxtToGame(ItemOverwrite.glossaryDesc[gameVer], _goalTxt.._reqTxt.._portalTxt.._goTxt, 3)
+      writeTxtToGame(ItemOverwrite.glossaryDesc[gameVer], _goalTxt.._reqTxt.._embTxt.._portalTxt.._goTxt, 3)
     end
 
    
@@ -970,6 +993,10 @@ function makeDummyItem()
   --writeTxtToGame(ItemOverwrite.dummyAbilityNameAddr[gameVer], "Ability", 3)
   --writeTxtToGame(ItemOverwrite.dummyAbilityDescAddr[gameVer], "Check log for Ability", 2)
 
+  --Toy 14
+  writeTxtToGame(ItemOverwrite.toy14NameAddr[gameVer], "Lucky Emblem", 3)
+  --writeTxtToGame(ItemOverwrite.toy14DescAddr[gameVer], "", 3)
+
   --Replace chest data with this item
   for i=0, 226 do
     WriteArray(MemoryAddresses.chestDataS[gameVer]+0x1A+(8*i), ItemOverwrite.dummyId)
@@ -1043,7 +1070,7 @@ end
 --Dummy Item Inventory
 local _dummyInv = {0xA4C580, 0xA4BE00}
 local _abilityInv = {0xA4C570, 0xA4BDF0}
-local _flowmotionKeyInv = {0xA4C360}
+local _flowmotionKeyInv = {0xA4C360, 0xA4BBE0}
 function removeDummyItem()
   if ReadByte(_dummyInv[gameVer]) > 0x00 then --We have a dummy; wipe it
     WriteArray(_dummyInv[gameVer], {0x00, 0x00, 0x00})
@@ -1056,7 +1083,7 @@ function removeDummyItem()
   end
 end
 
-local _foodStart = {0xA4C520}
+local _foodStart = {0xA4C520, 0xA4BDA0}
 function removeStatKeys()
   for i=70, 80, 2 do --Remove stat key items
     if ReadByte(MemoryAddresses.keyItems[gameVer]+i) > 0x00 then
@@ -1938,16 +1965,20 @@ function OnGameStart()
     --Nop functions that prevent AP stuff from working correctly
 
     --Prevents abilities from overwriting
-    WriteArray(0x376EB5, {0x90, 0x90, 0x90, 0x90, 0x90}) --TODO: Get EGS Address
+    local _abFunc = {0x376EB5, 0x376EA4}
+    local _worldChest = {0x271A43, 0x271A33}
+    local _abChest = {0x271956, 0x271946}
+    local _btlFunc = {0x23A980, 0x23A970}
+    WriteArray(_abFunc[gameVer], {0x90, 0x90, 0x90, 0x90, 0x90}) --TODO: Get EGS Address
     --Make world item chests open-able
-    WriteArray(0x271A43, {0x39, 0xC0, 0x90, 0x90, 0x90}) --TODO: Get EGS Address
+    WriteArray(_worldChest[gameVer], {0x39, 0xC0, 0x90, 0x90, 0x90}) --TODO: Get EGS Address
     --Make recipe chests open-able
     --WriteArray(0x2719FA, {0x39, 0xC0, 0x90, 0x90, 0x90})
     --Make ability chests open-able
-    WriteArray(0x271956, {0xB0, 0x01})
+    WriteArray(_abChest[gameVer], {0xB0, 0x01})
 
     --Prevent battle level from being overwritten (may only apply to riku?)
-    WriteArray(0x23A980, {0x90, 0x90})
+    WriteArray(_btlFunc[gameVer], {0x90, 0x90})
 
     --Game Clear Flag
     --WriteByte(0xA40780, 0x01)

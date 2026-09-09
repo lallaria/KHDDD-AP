@@ -11,6 +11,7 @@ function ItemDefs:DefineItems()
 
     --Key Items
     { ID = 2801001, Name = "Recusant Sigil", Usefulness = item_usefulness.special, Type="Key", Bytes = {0x1D, 0x04}, Offset=58}, --28
+    { ID = 2801002, Name = "Lucky Emblem", Usefulness = item_usefulness.special, Type="Key", Bytes = {0x0D, 0x08}},
 
     --Worlds
     --Itemized Versions

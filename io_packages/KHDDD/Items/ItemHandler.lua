@@ -31,6 +31,8 @@ ItemHandler.State = {
   Recusant = false,
   HasCat = false,
   HasBat = false,
+  HasEmblems = false,
+  Emblems = 0,
   ReceivedIndex=0
 }
 
@@ -96,7 +98,7 @@ function ItemHandler:Receive(type, value, cnt, isLocal)
   elseif type == "Recipe" then
     self:GiveRecipe(value, not _ahead)
   elseif type == "Key" then
-    self:GiveKeyItem(value)
+    self:GiveKeyItem(value, (_ahead and not isLocal)) --Only receive emblems if not local
   elseif type == "Stat" or type == "Support" or type == "Spirit" then
     self:GiveAbility(value, true)
   else
@@ -174,10 +176,31 @@ end
 -- ############################################################
 -- ####################  Key Items  ###########################
 -- ############################################################
-function ItemHandler:GiveKeyItem(value)
+function ItemHandler:GiveKeyItem(value, canReceive)
   local _key = getItemById(value)
+  if _key.Name == "Lucky Emblem" then
+    if canReceive then
+      self:GiveLuckyEmblem()
+    end
+    return
+  end
   WriteArray(MemoryAddresses.keyItems[gameVer]+_key.Offset, _key.Bytes)
   self.State.Recusant = true --Only key item is the recusant sigil
+end
+
+function ItemHandler:GiveLuckyEmblem()
+  if ReadByte(MemoryAddresses.emblems[gameVer]) == 0x00 then --Obtained item for the first time
+    WriteArray(MemoryAddresses.emblems[gameVer], {0x0D, 0x08})
+  end
+
+  local _currVal = ReadByte(MemoryAddresses.emblems[gameVer]+0x02)
+  _currVal = math.min(_currVal, 98)+0x01 --Don't try to receive more than we can
+  self.State.Emblems = _currVal
+  WriteByte(MemoryAddresses.emblems[gameVer]+0x02, _currVal)
+
+  if self.State.Emblems >= Configs.EmblemReqs and Configs.EmblemReqs > 0 then --Send location for finding all emblems
+    SendToApClient(MessageTypes.StoryChecked, {"2670300"})
+  end
 end
 
 
@@ -709,6 +732,7 @@ function ItemHandler:CheckMacguffins()
   local _hasCat = false
   local _hasBat = false
   local _hasRecusant = false
+  local _hasEmblem = false
 
   --Standard Goal
 
@@ -723,8 +747,11 @@ function ItemHandler:CheckMacguffins()
     if ReadByte(MemoryAddresses.keyItems[gameVer]+58) > 0x00 then --Has recusant sigil
       _hasRecusant = true
     end
+    if ReadByte(MemoryAddresses.emblems[gameVer]+0x02) >= Configs.EmblemReqs then
+      _hasEmblem = true
+    end
 
-    if _hasCat and _hasBat and _hasRecusant and #self.State.Recipes >= Configs.RecipeReqs then
+    if _hasCat and _hasBat and _hasRecusant and _hasEmblem and #self.State.Recipes >= Configs.RecipeReqs then
       _hasMacguffin = true
 
       --Unlock fast go save points
@@ -752,9 +779,14 @@ function ItemHandler:CheckMacguffins()
     self.State.HasCat = _hasCat
     self.State.HasBat = _hasBat
     self.State.Recusant = _hasRecusant
+    self.State.HasEmblems = _hasEmblem
   end
 
-  if Configs.Goal == 1 and #self.State.Recipes >= Configs.RecipeReqs then --Simplified goal for superbosses
+  if Configs.Goal == 1 and #self.State.Recipes >= Configs.RecipeReqs and self.State.Emblems >= Configs.EmblemReqs then --Simplified goal for superbosses
+    _hasMacguffin = true
+  end
+
+  if Configs.Goal == 2 and self.State.Emblems >= Configs.EmblemReqs then
     _hasMacguffin = true
   end
 

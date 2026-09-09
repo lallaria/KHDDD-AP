@@ -19,7 +19,8 @@ ConfigTask.SlotDataTypes = {
   LocalItemNotifs = 10,
   RemoteItemNotifs = 11,
   PatchInfo = 12,
-  VanillaLevels = 13
+  VanillaLevels = 13,
+  EmblemReqs = 14
 }
 
 function ConfigTask:ParseSlotData(slotType, msgVal)
@@ -51,6 +52,8 @@ function ConfigTask:ParseSlotData(slotType, msgVal)
     	self:PatchGame(msgVal)
     elseif slotType == self.SlotDataTypes.VanillaLevels then
     	self:SetVanillaLevels(msgVal)
+    elseif slotType == self.SlotDataTypes.EmblemReqs then
+    	self:SetEmblemReq(msgVal)
     end
 end
 
@@ -164,6 +167,13 @@ function ConfigTask:SetRecipeReq(msgVal)
 	local _reqStr = "Required Recipes: "..msgVal[1]
 	writeTxtToGame(ItemOverwrite.recipeDescAddr[gameVer], _reqStr, 1)
 	ConsolePrint("Setting required recipes to "..msgVal[1])
+end
+
+function ConfigTask:SetEmblemReq(msgVal)
+	Configs.EmblemReqs = tonumber(msgVal[1])
+	local _reqStr = "Required: "..msgVal[1]
+	writeTxtToGame(ItemOverwrite.toy14DescAddr[gameVer], _reqStr, 1)
+	ConsolePrint("Setting required emblems to "..msgVal[1])
 end
 
 function ConfigTask:SetGoal(msgVal)

@@ -1,6 +1,6 @@
 local PatchTask = {}
 
-local _rewardAddr = {0xA96F28, 0xA96F28-0x780} --TODO: Find EGS Address
+local _rewardAddr = {0xA96F28, 0xA967A8} --TODO: Find EGS Address
 
 function PatchTask:InitPatchTable()
 	--TODO: Build out reward sets so this works better
@@ -298,14 +298,14 @@ PatchTask.BONUS = {
 
 --Dive rewards might also be missions?
 PatchTask.MissionDict = {
-	["2670228"] = 0x10A2A4D6, --High Jump
-	["2670285"] = 0x10A2A1FE, --Sliding Sidewinder
-	["2670237"] = 0x10A2A746, --Slide Roll
-	["2670276"] = 0x10A2ABDE, --Shadow Slide
-	["2670277"] = 0x10A2ABD6, --Shadow Strike
-	["2670246"] = 0x10A2AC6E, --Recusant Sigil
-	["2680212"] = 0x10A2AD9E, --Unbound (Sora)
-	["2680213"] = 0x10A2ADE6 --Unbound (Riku)
+	["2670228"] = {0x10A2A4D6, 0x10A29D56}, --High Jump
+	["2670285"] = {0x10A2A1FE, 0x10A29A7E}, --Sliding Sidewinder
+	["2670237"] = {0x10A2A746, 0x10A29FC6}, --Slide Roll
+	["2670276"] = {0x10A2ABDE, 0x10A2A45E}, --Shadow Slide
+	["2670277"] = {0x10A2ABD6, 0x10A2A456}, --Shadow Strike
+	["2670246"] = {0x10A2AC6E, 0x10A2A4EE}, --Recusant Sigil
+	["2680212"] = {0x10A2AD9E, 0x10A2A61E}, --Unbound (Sora)
+	["2680213"] = {0x10A2ADE6, 0x10A2A666} --Unbound (Riku)
 }
 
 function PatchTask:AssignBonusRewards(locId, itemName)
@@ -393,11 +393,6 @@ function PatchTask:WriteLevelReward(lvl, character)
 end
 
 function PatchTask:AssignMissionRewards(locId, rewardBytes)
-	local _egsOffset = 0x00
-	if gameVer == 2 then
-		_egsOffset = 0x780
-	end
-
 	local locStr = tostring(locId)
 
 	if #rewardBytes == 1 then
@@ -406,14 +401,14 @@ function PatchTask:AssignMissionRewards(locId, rewardBytes)
 
 	if locStr == "2680212" or locStr == "2680213" then --Assign all possible unbound locations
 		for i=1, 6-(locId-2680212) do
-			WriteArray(self.MissionDict[locStr]+(0x90*(i-1))-_egsOffset, rewardBytes)
+			WriteArray(self.MissionDict[locStr][gameVer]+(0x90*(i-1)), rewardBytes)
 		end
 		return
 	end
 	if #rewardBytes == 1 then
 		table.insert(rewardBytes, 0x00)
 	end
-	WriteArray(self.MissionDict[locStr]-_egsOffset, rewardBytes)
+	WriteArray(self.MissionDict[locStr][gameVer], rewardBytes)
 	ConsolePrint("Mission Reward Set")
 end
 
