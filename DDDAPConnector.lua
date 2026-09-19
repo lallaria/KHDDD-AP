@@ -1494,7 +1494,7 @@ function ReceiveFromApClient()
     if message then
       if _receiveBuffer ~= "" then
         message = _receiveBuffer .. message
-        receiveBuffer = ""
+        _receiveBuffer = ""
       end
       ConsolePrint("Full message received: "..message)
       local parts = SplitString(message, ";")
@@ -1518,7 +1518,7 @@ function ReceiveFromApClient()
       return newMessage
 
     elseif partial and #partial > 0 then
-      receiveBuffer = receiveBuffer .. partial
+      _receiveBuffer = _receiveBuffer .. partial
       ConsolePrint("Partial message received")
     elseif err then
       ConsolePrint("Error receiving message: " .. err)
