@@ -1337,7 +1337,7 @@ function ConnectToApClient()
   local ok, err = client:connect("127.0.0.1", 13713)
 
   if ok or err == "already connected" then
-    ConsolePrint("Connected to client!")
+    ConsolePrint("Connected to AP Client!")
     return true
   elseif err == "timeout" then
     return false
@@ -1354,7 +1354,7 @@ function SendToApClient(type,messages)
     end
     message = message .. "\n"
 
-    ConsolePrint("Sending message:" .. message)
+    ConsolePrint("KHDDD Lua output: << " .. message .. " >>")
     client:send(message)
   end
 end
@@ -1496,7 +1496,7 @@ function ReceiveFromApClient()
         message = _receiveBuffer .. message
         _receiveBuffer = ""
       end
-      ConsolePrint("Full message received: "..message)
+      ConsolePrint("APClient Input: << " .. message .. " >> ")
       local parts = SplitString(message, ";")
       local type = tonumber(parts[1])
       local newMessage = {
@@ -1510,7 +1510,7 @@ function ReceiveFromApClient()
 
       --Check if connection is closed
       if newMessage.type == MessageTypes.Closed then
-        ConsolePrint("Server Closed; Resetting Client")
+        ConsolePrint("APClient Connection Closed; Resetting Lua Connection.")
         CloseConnection()
         return
       end
@@ -1519,11 +1519,11 @@ function ReceiveFromApClient()
 
     elseif partial and #partial > 0 then
       _receiveBuffer = _receiveBuffer .. partial
-      ConsolePrint("Partial message received")
+      ConsolePrint("APClient Input Part: << " .. partial)
     elseif err then
-      ConsolePrint("Error receiving message: " .. err)
+      ConsolePrint("Error receiving message from AP: " .. err)
       if err == "timeout" then
-        ConsolePrint("Please relaunch the AP Client")
+        ConsolePrint("Timed out; please relaunch the AP Client")
         CloseConnection()
       end
     end
