@@ -1352,9 +1352,7 @@ function SendToApClient(type,messages)
     for i = 1, #messages do
       message = message .. ";" .. tostring(messages[i])
     end
-    message = message .. "\n"
-
-    ConsolePrint("KHDDD Lua output: << " .. message .. " >>")
+    ConsolePrint("KHDDD Lua Output -> AP Client: << " .. message .. " >>")
     client:send(message)
   end
 end
@@ -1496,7 +1494,7 @@ function ReceiveFromApClient()
         message = _receiveBuffer .. message
         _receiveBuffer = ""
       end
-      ConsolePrint("APClient Input: << " .. message .. " >> ")
+      ConsolePrint("APClient -> KHDDD Lua Input: << " .. message .. " >> ")
       local parts = SplitString(message, ";")
       local type = tonumber(parts[1])
       local newMessage = {
@@ -1519,7 +1517,7 @@ function ReceiveFromApClient()
 
     elseif partial and #partial > 0 then
       _receiveBuffer = _receiveBuffer .. partial
-      ConsolePrint("APClient Input Part: << " .. partial)
+      ConsolePrint("APClient -> KHDDD Lua Input Part: << " .. partial)
     elseif err then
       ConsolePrint("Error receiving message from AP: " .. err)
       if err == "timeout" then
