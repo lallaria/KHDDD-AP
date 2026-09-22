@@ -48,7 +48,7 @@ MessageHandler.State = { --Track intended info states for the different worlds
 function MessageHandler:localItemToColor(itemId)
 	local _item = getItemById(itemId)
 
-	local _clr = KHCOLORS.CYAN
+	local _clr = KHCOLORS.GRAY
 
 	if _item == nil then
 		return _clr
@@ -57,7 +57,7 @@ function MessageHandler:localItemToColor(itemId)
 	local _type = _item.Type
 
 	if hasValue(_progTypes, _type) or _item.Usefulness == item_usefulness.progression then
-		_clr = KHCOLORS.PINK
+		_clr = KHCOLORS.YELLOW
 	elseif hasValue(_usefulTypes, _type) or _item.Usefulness == item_usefulness.normal then
 		_clr = KHCOLORS.GREEN
 	elseif hasValue(_trapTypes, _type) then
@@ -68,10 +68,10 @@ function MessageHandler:localItemToColor(itemId)
 end
 
 function MessageHandler:remoteItemToColor(usefulness)
-	local _clr = KHCOLORS.CYAN
+	local _clr = KHCOLORS.GRAY
 
 	if usefulness == item_usefulness.progression then
-		_clr = KHCOLORS.PINK
+		_clr = KHCOLORS.YELLOW
 	elseif usefulness == item_usefulness.normal then
 		_clr = KHCOLORS.GREEN
 	elseif usefulness == item_usefulness.trap then
@@ -419,10 +419,10 @@ function MessageHandler:runItemQueue()
 		local _partialMsg = "Sent ".._name.."to "
 		if _missionOverwrite == 0x01 then
 			self:writeColorToGame(ItemOverwrite.linkInfo1[gameVer], "Sent ", _name, " to ", _clr, 3)
-			self:writeColorToGame(ItemOverwrite.linkInfo1[gameVer]+(#_partialMsg*2)+4, " ", _player, "!", KHCOLORS.YELLOW, _filler)
+			self:writeColorToGame(ItemOverwrite.linkInfo1[gameVer]+(#_partialMsg*2)+4, " ", _player, "!", KHCOLORS.PINK, _filler)
 		else
 			self:writeColorToGame(ItemOverwrite.linkInfo2[gameVer], "Sent ", _name, " to ", _clr, 3)
-			self:writeColorToGame(ItemOverwrite.linkInfo2[gameVer]+(#_partialMsg*2)+4, " ", _player, "!", KHCOLORS.YELLOW, _filler)
+			self:writeColorToGame(ItemOverwrite.linkInfo2[gameVer]+(#_partialMsg*2)+4, " ", _player, "!", KHCOLORS.PINK, _filler)
 		end
 		WriteByte(_infoAddr, _missionOverwrite)
 
