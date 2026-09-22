@@ -908,6 +908,9 @@ function onCharacterChange()
 
 
   MessageHandler.State.restore = true
+
+  --quick fix to instant drop/tt & twtnw drops not changing characters correctly
+  dataStorage()
 end
 
 local _isPaused = false
