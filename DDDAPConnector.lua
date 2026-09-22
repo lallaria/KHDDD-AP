@@ -899,7 +899,7 @@ function onCharacterChange()
   setSecretPortals()
 
   WorldHandler:ApplyScaling()
-  if ReadByte(roomInfo[1]) == 0x0B or ReadByte(DropAddresses.sora.world[gameVer]) == 0x0B or ReadByte(DropAddresses.riku.world[gameVer]) == 0x0B then
+  if roomInfo[1] == 0x0B or ReadByte(DropAddresses.sora.world[gameVer]) == 0x0B or ReadByte(DropAddresses.riku.world[gameVer]) == 0x0B then
     WorldHandler:MapLoaded()
   end
 
@@ -938,7 +938,7 @@ function onPauseChange()
   end
   ItemHandler:RebuildAbilities()
 
-  if ReadByte(roomInfo[1]) == 0x0B then
+  if roomInfo[1] == 0x0B then
     --Accounts for being warped to world map from a room index of 01
     WorldHandler:MapLoaded()
   end
