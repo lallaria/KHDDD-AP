@@ -315,3 +315,11 @@ assets:
   method : copy
   source:
   - name: remastered/menu/en/camp/ablink/bin/numeric.ctt/JP_numeric.dds
+- name: menu/en/ckpt/info/itemget/bin/itemget_02_n.l2d
+  method : copy
+  source:
+  - name: menu/en/ckpt/info/itemget/bin/itemget_02_n.l2d
+- name: remastered/menu/en/ckpt/info/itemget/bin/itemget_02_n.l2d/US_itemget_02.dds
+  method : copy
+  source:
+  - name: remastered/menu/en/ckpt/info/itemget/bin/itemget_02_n.l2d/US_itemget_02.dds

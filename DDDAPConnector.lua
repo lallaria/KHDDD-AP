@@ -235,13 +235,15 @@ KHSCII = {
 }
 
 KHCOLORS = {
+  WHITE = {0x28, 0xE0},
+  WHITE = {0x27, 0xE0},
+  YELLOW = {0x26, 0xE0}, --Progression
+  CYAN = {0x25, 0xE0}, 
+  GREEN = {0x24, 0xE0}, --Useful
+  PINK = {0x23, 0xE0}, --Useful Progression
   RED = {0x22, 0xE0}, --Trap
-  YELLOW = {0x26, 0xE0}, --Player
-  CYAN = {0x25, 0xE0}, --Filler
-  GREEN = {0x24, 0xE0},
-  PINK = {0x23, 0xE0}, --Progression
-  BLUE = {0x21, 0xE0}, --Useful
-  GRAY = {0x20, 0xE0},
+  BLUE = {0x21, 0xE0}, --Player
+  GRAY = {0x20, 0xE0}, --Filler
 }
 
 --Record: A51940
@@ -276,7 +278,7 @@ WorldFlags = {
     worldNo = 0x01,
     sora = {
       story = {0xA41D94, 0xA41614},
-      info = {0xA41E50, 0xA416D0}
+      info = {0xA41E4E, 0xA416CE}
     }
   },
   traverseTown = {
@@ -288,7 +290,7 @@ WorldFlags = {
       selectable = {0x10978F18, 0x10978798},
       startRoom = 0x01,
       secretPortal = {0x64, 0x01, 0x05},
-      info = {0xA41E54, 0xA416D4},
+      info = {0xA41E52, 0xA416D2},
     },
     riku = {
       story = {0xA445BC, 0xA43E3C},
@@ -381,7 +383,7 @@ WorldFlags = {
       startRoom = 0x0F,
       battle = {0xA41E00, 0xA41680},
       secretPortal = {0x6C, 0x01, 0x03},
-      info = {0xA41E56, 0xA416D6},
+      info = {0xA41E54, 0xA416D4},
     },
     riku = {
       unlocked = {0xA44720, 0xA43FA0},
@@ -405,7 +407,7 @@ WorldFlags = {
       dockPoint = {0x10979106, 0x10978986},
       battle = {0xA41E01, 0xA41681},
       secretPortal = {0x6E, 0x01, 0x01},
-      info = {0xA41E58, 0xA416D8},
+      info = {0xA41E56, 0xA416D6},
     },
     riku = {
       unlocked = {0xA44724, 0xA43FA4},
@@ -447,8 +449,11 @@ WorldFlags = {
 item_usefulness = {
   progression = 1,
   normal = 2,
+  progression_useful = 3, -- Useful Progression especially good!
   trap = 4,
-  special = 5
+  special = 5, -- shouldn't need this...
+  skip_balancing = 6, -- Mcguffins
+  deprioritized = 8, -- non prio locations
 }
 
 MessageTypes = {
@@ -1428,8 +1433,9 @@ function HandleMessage(msg)
     local _playerName = msg.values[2]
     local _itemCategory = msg.values[3]
 
-    if Configs.RemoteItemNotifs == 0 or Configs.RemoteItemNotifs == tonumber(_itemCategory) then
-      MessageHandler:remoteReceived(_itemName, _playerName, tonumber(_itemCategory))
+    local _flags = tonumber(_itemCategory)
+    if Configs.RemoteItemNotifs == 0 or (Configs.RemoteItemNotifs == 1 and _flags % 2 == 1) then --bit 0 is progression
+      MessageHandler:remoteReceived(_itemName, _playerName, _flags)
     end
 
     --ConsolePrint("Remote item message: Sent ".._itemName.." to ".._playerName.." | ".._itemCategory)
@@ -1579,7 +1585,7 @@ function ReceiveItem(itemID, itemCnt)
       MessageHandler:msgReceived(itemID, 0)
     elseif Configs.LocalItemNotifs == 1 then
       local _progTypes = {"World", "Recipe", "Flowmotion", "Key", "Goal"}
-      if hasValue(_progTypes, _type) or _item.Usefulness == item_usefulness.progression then
+      if hasValue(_progTypes, _type) or _item.Usefulness == item_usefulness.progression or _item.Usefulness == item_usefulness.progression_useful then
         MessageHandler:msgReceived(itemID, 0)
       end
     end
@@ -1980,6 +1986,20 @@ function OnGameStart()
 
     --Prevent battle level from being overwritten (may only apply to riku?)
     WriteArray(_btlFunc[gameVer], {0x90, 0x90})
+
+    --Item-get popup: give the AP dummy item icon frame 5, which the shipped itemget_02_n.l2d points at sheet cell (3,0)
+    if gameVer == 1 then --TODO: Get EGS Address
+      WriteArray(0x2726C9, {
+        0x81, 0xFE, 0x13, 0x08, 0x00, 0x00, --cmp esi, 0x813
+        0xB8, 0x04, 0x00, 0x00, 0x00,       --mov eax, 4 (other toys)
+        0x75, 0x05,                         --jne +5
+        0xB8, 0x05, 0x00, 0x00, 0x00,       --mov eax, 5
+        0x40, 0x84, 0xFF,                   --test dil, dil
+        0xBB, 0x73, 0x00, 0x00, 0x00,       --mov ebx, 0x73
+        0x0F, 0x44, 0xD8,                   --cmove ebx, eax
+        0xEB, 0x0B,                         --jmp 0x2726F3 (shared epilogue)
+        0x90, 0x90, 0x90})
+    end
 
     --Game Clear Flag
     --WriteByte(0xA40780, 0x01)

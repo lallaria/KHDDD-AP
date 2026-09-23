@@ -3,15 +3,15 @@ local ItemDefs = {}
 function ItemDefs:DefineItems()
   items = {
     --Events
-    { ID = 2639999, Name = "Victory", Usefulness = item_usefulness.special, Type="Goal"},
-    { ID = 2640000, Name = "Victory", Usefulness = item_usefulness.special, Type="Goal"},
+    { ID = 2639999, Name = "Victory", Usefulness = item_usefulness.progression_useful, Type="Goal"},
+    { ID = 2640000, Name = "Victory", Usefulness = item_usefulness.progression_useful, Type="Goal"},
 
     --Traps
     { ID = 2621001, Name = "Instant Drop", Usefulness = item_usefulness.trap, Type="Trap"},
 
     --Key Items
-    { ID = 2801001, Name = "Recusant Sigil", Usefulness = item_usefulness.special, Type="Key", Bytes = {0x1D, 0x04}, Offset=58}, --28
-    { ID = 2801002, Name = "Lucky Emblem", Usefulness = item_usefulness.special, Type="Key", Bytes = {0x0D, 0x08}},
+    { ID = 2801001, Name = "Recusant Sigil", Usefulness = item_usefulness.progression_useful, Type="Key", Bytes = {0x1D, 0x04}, Offset=58}, --28
+    { ID = 2801002, Name = "Lucky Emblem", Usefulness = item_usefulness.progression_useful, Type="Key", Bytes = {0x0D, 0x08}},
 
     --Worlds
     --Itemized Versions
@@ -318,17 +318,17 @@ function ItemDefs:DefineItems()
     { ID = 2661012, Name = "Flowmotion", Type="Flowmotion Item", Bytes={0x36, 0x03}},
 
     --Movement
-    { ID = 2681080, Name = "High Jump", Type="Command", Usefulness=item_usefulness.progression, Bytes={0x02}},
+    { ID = 2681080, Name = "High Jump", Type="Command", Usefulness=item_usefulness.progression_useful, Bytes={0x02}},
     { ID = 2681081, Name = "Dodge Roll", Type="Command", Bytes={0x03}},
     { ID = 2681082, Name = "Slide Roll", Type="Command", Usefulness=item_usefulness.normal, Bytes={0x04}},
     { ID = 2681083, Name = "Dark Roll", Type="Command", Usefulness=item_usefulness.normal, Bytes={0x05}},
-    { ID = 2681084, Name = "Air Slide", Type="Command", Usefulness=item_usefulness.progression, Bytes={0x06}},
+    { ID = 2681084, Name = "Air Slide", Type="Command", Usefulness=item_usefulness.progression_useful, Bytes={0x06}},
     { ID = 2681085, Name = "Sonic Impact", Type="Command", Usefulness=item_usefulness.normal, Bytes={0x07}},
     { ID = 2681086, Name = "Double Impact", Type="Command", Usefulness=item_usefulness.normal, Bytes={0x08}},
-    { ID = 2681087, Name = "Glide", Type="Command", Usefulness=item_usefulness.progression, Bytes={0x09}},
-    { ID = 2681088, Name = "Superglide", Type="Command", Usefulness=item_usefulness.progression, Bytes={0x0A}},
+    { ID = 2681087, Name = "Glide", Type="Command", Usefulness=item_usefulness.progression_useful, Bytes={0x09}},
+    { ID = 2681088, Name = "Superglide", Type="Command", Usefulness=item_usefulness.progression_useful, Bytes={0x0A}},
     { ID = 2681089, Name = "Shadow Slide", Type="Command", Usefulness=item_usefulness.normal, Bytes={0x0B}},
-    { ID = 2681090, Name = "Double Flight", Type="Command", Usefulness=item_usefulness.progression, Bytes={0x0C}},
+    { ID = 2681090, Name = "Double Flight", Type="Command", Usefulness=item_usefulness.progression_useful, Bytes={0x0C}},
 
     --Defense
     { ID = 2681091, Name = "Block", Type="Command", Bytes={0x0D}},
