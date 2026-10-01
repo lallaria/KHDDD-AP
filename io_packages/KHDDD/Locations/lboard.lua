@@ -5,6 +5,11 @@ local _checkItem1 = {0xA4C538, 0xA4BDB8} --First blank toy for spirit board
 local _checkItem2 = {0xA4C53C, 0xA4BDBC} --Second blank toy for spirit board
 local _prizeIdNameStart = {0x1096A9B8} --34 bytes per name
 local _commandHeader = {0x10B7D624}
+--local _footerTxt = {0x1191A370}
+local _commandFooter = {0x10B7D376}
+local _itemGateFooter = {0x10B7D54C}
+local _checkpointTxt = {0x10B7D70E}
+local _itemsCheckpointTxt = {0x10B7D73C}
 
 --Determine if player is in the spirit menu
 local _inSpiritMenu = {0xA9B2DC, 0xA9AB5C}
@@ -129,12 +134,49 @@ function LBoard:NameToBoard(spiritId, nodeNum, pName)
 			for x=1, #_addToBoard[y] do
 				if _addToBoard[y][x][1] == nodeNum then
 					table.insert(_addToBoard[y][x], pName)
-					ConsolePrint(pName.." written to "..tostring(y)..","..tostring(x))
 				end
 			end
 		end
 	else
 		ConsolePrint("Failed to write requested name")
+	end
+end
+
+function LBoard:ChangeFooter()
+	--Change footer based on item details
+	local _gates = self.GateCoords[current_spirit]
+	if _gates == nil then
+		return
+	end
+
+	local _x = _pos[1]
+	local _y = _pos[2]
+
+	--36 characters for footer
+	local _writeStr = "Opens after clearing specified worlds."
+	writeTxtToGame(_itemGateFooter[gameVer], _writeStr, 2)
+	
+	--Write owned variable details
+	--WriteArray(_itemGateFooter[gameVer]+(string.len(_writeStr)*2)-1, {0x00, 0x24, 0x00, 0x6E, 0x00, 0x28, 0xE0, 0x00, 0x00})
+	
+	if _gates[1][1] == _x and _gates[1][2] == _y then --Gate active; write to headers
+		local _char = "Sora"
+		if _gates[1][3] == 2 then
+			_char = "Riku"
+		end
+		local _amtRemaining = math.max(_gates[1][4]-self:WorldsBeaten(_gates[1][3]), 0)
+		writeTxtToGame(_checkpointTxt[gameVer], _char.." World", 2)
+		writeTxtToGame(_itemsCheckpointTxt[gameVer], tostring(_amtRemaining), 2)
+	elseif _gates[2] ~= nil then
+		if _gates[2][1] == _x and _gates[2][2] == _y then
+		local _char = "Sora"
+		if _gates[2][3] == 2 then
+			_char = "Riku"
+		end
+		local _amtRemaining = math.max(_gates[2][4]-self:WorldsBeaten(_gates[2][3]), 0)
+		writeTxtToGame(_checkpointTxt[gameVer], _char.." World", 2)
+		writeTxtToGame(_itemsCheckpointTxt[gameVer], tostring(_amtRemaining), 2)
+		end
 	end
 end
 
@@ -167,12 +209,11 @@ function LBoard:DisplayOwningPlayer()
 
 end
 
-local _worldsBeaten = {0, 0}
 function LBoard:CheckGateReqs()
 
 	--For setting required items
 	local _maxReq = 7 ----At least 7 items are needed
-	local _baseItm = 100-_maxReq
+	local _baseItm = 7-_maxReq
 
 	--Are we hovering over a gate
 	if self.GateCoords[current_spirit] == nil then
@@ -247,6 +288,7 @@ end
 
 function LBoard:OnSpiritChange()
 	self:CheckGateReqs()
+	writeTxtToGame(_commandFooter[gameVer], "Grants you the item shown.", 2)
 end
 
 local _inMenu = false
@@ -266,6 +308,7 @@ function LBoard:Update()
 	self:ChangeItemNames()
 	self:CheckRedeems()
 	self:DisplayOwningPlayer()
+	self:ChangeFooter()
 end
 
 function LBoard:Exit() --Player left the link board
