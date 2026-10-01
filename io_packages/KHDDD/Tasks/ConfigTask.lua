@@ -20,8 +20,12 @@ ConfigTask.SlotDataTypes = {
   RemoteItemNotifs = 11,
   PatchInfo = 12,
   VanillaLevels = 13,
-  EmblemReqs = 14
+  EmblemReqs = 14,
+  AffinityMult = 15
 }
+
+--Cumulative spirit affinity points for levels 1-9 (db_prm.bin +0x900)
+ConfigTask.VanillaAffinity = {50, 100, 200, 400, 800, 1600, 2800, 4400, 6400}
 
 function ConfigTask:ParseSlotData(slotType, msgVal)
 	if slotType == self.SlotDataTypes.KeybladeStats then
@@ -54,6 +58,8 @@ function ConfigTask:ParseSlotData(slotType, msgVal)
     	self:SetVanillaLevels(msgVal)
     elseif slotType == self.SlotDataTypes.EmblemReqs then
     	self:SetEmblemReq(msgVal)
+    elseif slotType == self.SlotDataTypes.AffinityMult then
+    	self:SetAffinityMult(msgVal)
     end
 end
 
@@ -221,6 +227,12 @@ function ConfigTask:SetExpMult(msgVal)
 	ConsolePrint("Setting Exp Mult to "..msgVal[1])
 end
 
+function ConfigTask:SetAffinityMult(msgVal)
+	Configs.AffinityMult = tonumber(msgVal[1])
+	self:WriteAffinityTable()
+	ConsolePrint("Setting Affinity Mult to "..msgVal[1])
+end
+
 function ConfigTask:SetStatBoost(msgVal)
 	Configs.StatBonus = tonumber(msgVal[1])
 	ConsolePrint("Setting Stat Bonus to "..msgVal[1])
@@ -265,6 +277,22 @@ function ConfigTask:WriteExpTable()
 		WriteInt(_nextAddr, math.floor(_tableVal*_realExpMult))
 	end
 	self.State.ExpSet = true
+end
+
+--Rewrites from vanilla, not in place: returning to title reloads db_prm.bin, possibly at the same address
+function ConfigTask:WriteAffinityTable()
+	local _dbPrm = ReadLong(MemoryAddresses.dbPrm[gameVer])
+	if _dbPrm == 0 then
+		return
+	end
+	local _thresholds = _dbPrm+0x900
+	local _vanilla = self.VanillaAffinity
+	if ReadInt(_thresholds+(#_vanilla-1)*4, true) == _vanilla[#_vanilla]//Configs.AffinityMult then
+		return
+	end
+	for i=1, #_vanilla do
+		WriteInt(_thresholds+(i-1)*4, _vanilla[i]//Configs.AffinityMult, true)
+	end
 end
 
 return ConfigTask

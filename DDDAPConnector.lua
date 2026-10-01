@@ -108,6 +108,7 @@ MemoryAddresses = { --Primary memory addresses to reference
   lboard = {0x11992780, 0x11992000},
   boardRewards = {0x10986D54, 0x109865D4},
   expTable = {0x7B2A94, 0x7B2C34},
+  dbPrm = {0xA99D40, 0xA995C0}, --Pointer to db_prm.bin; 0 while unloaded
   subMenu = {0xA9B2F4, 0xA9AB74},
   emblems = {0xA4C568, 0xA4BDE8}
 }
@@ -150,6 +151,7 @@ Configs = {
   AutoCraftSpirits = true,
   FastGoMode = false,
   ExpMult = 10,
+  AffinityMult = 1,
   StatBonus = 2,
 
   --AP Settings
@@ -970,6 +972,7 @@ function onRoomChange()
   ItemHandler:RebuildFlowmotion()
   PatchTask:WriteBonusRewards()
   PatchTask:ResetRewards()
+  ConfigTask:WriteAffinityTable()
   _exeTime = -1
   setSecretPortals()
 
