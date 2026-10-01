@@ -184,10 +184,10 @@ function LBoard:CheckGateReqs()
 	--Gate 1 conditions are tied to amount of blank item 1
 	--Gate 2 conditions are tied to amount of blank item 2
 
-	local _blank1Amt = _baseItm+(self:WorldsBeaten(self.GateCoords[current_spirit][1][3]))
+	local _blank1Amt = _baseItm+(self:WorldsBeaten(self.GateCoords[current_spirit][1][3]))+(_maxReq-self.GateCoords[current_spirit][1][4])
 	local _blank2Amt = 0
-	if self.GateCoords[_activeSpirit][2] ~= nil then --Spirit has 2 gates
-		_blank2Amt = _baseItm+(self:WorldsBeaten(self.GateCoords[current_spirit][2][3]))
+	if self.GateCoords[current_spirit][2] ~= nil then --Spirit has 2 gates
+		_blank2Amt = _baseItm+(self:WorldsBeaten(self.GateCoords[current_spirit][2][3]))+(_maxReq-self.GateCoords[current_spirit][2][4])
 	end
 
 	WriteArray(_checkItem1[gameVer], {0x01, 0x08, _blank1Amt})
@@ -208,8 +208,8 @@ function LBoard:WorldsBeaten(character)
 			ReadByte(WorldFlags.traverseTown.sora.story[gameVer]+0x03),
 			ReadByte(WorldFlags.theWorldThatNeverWas.sora.story[gameVer])
 		}
-		for x in _soraFlags do
-			if x > 0x10 then
+		for index, value in ipairs(_soraFlags) do
+			if value > 0x10 then
 				_worldsBeaten = _worldsBeaten + 1
 			end
 		end
@@ -223,8 +223,8 @@ function LBoard:WorldsBeaten(character)
 			ReadByte(WorldFlags.traverseTown.riku.story[gameVer]+0x02),
 			ReadByte(WorldFlags.theWorldThatNeverWas.riku.story[gameVer]+0x01) --For defeating ansem
 		}
-		for x in _rikuFlags do
-			if x > 0x10 then
+		for index, value in ipairs(_rikuFlags) do
+			if value > 0x10 then
 				_worldsBeaten = _worldsBeaten + 1
 			end
 		end
@@ -262,7 +262,7 @@ function LBoard:Update()
 	_inMenu = true
 
 	_pos = self:CheckCursorPos()
-	self:CheckGateReqs()
+	self:CheckSpiritChange()
 	self:ChangeItemNames()
 	self:CheckRedeems()
 	self:DisplayOwningPlayer()
