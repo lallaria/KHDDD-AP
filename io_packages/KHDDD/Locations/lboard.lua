@@ -20,8 +20,8 @@ LBoard.GateCoords = {
 	--First and Second indexes are coordinates for the gates
 	--Third index is the type of gate (1 or 2 for Sora or Riku world)
 	--Fourth index is the number of items needed to fulfill
-	{{2, 0, 1, 5}, {2, 2, 2, 3}}, --Meow Wow
-	{{3, 1, 2, 4}, {1, 3, 2, 2}}  --Tama Sheep
+	{{2, 0, 1, 5}, {2, 2, 1, 3}}, --Meow Wow
+	{{3, 1, 1, 4}, {1, 3, 1, 2}}  --Tama Sheep
 }
 
 LBoard.SpiritItems = {}
@@ -169,50 +169,84 @@ end
 
 local _worldsBeaten = {0, 0}
 function LBoard:CheckGateReqs()
-	local _x = _pos[1]
-	local _y = _pos[2]
-	local _spiritPtr = GetPointer(_activeBoard[gameVer], _activeBoardOffset)
-	local _activeSpirit = ReadByte(_spiritPtr, true)
 
 	--For setting required items
 	local _maxReq = 7 ----At least 7 items are needed
 	local _baseItm = 100-_maxReq
 
 	--Are we hovering over a gate
-	if _x == self.GateCoords[_activeSpirit][1][1] and _y == self.GateCoords[_activeSpirit][1][2] then
-		--Hovering over gate 1
-
-		--Calculate how many worlds are needed. Add what's not needed to total
-		local _req = self.GateCoords[_activeSpirit][1][3]
-		local _haveItem = _baseItm+(7-_req)
-
-		--TODO: Calculate how many worlds are beaten
-		_worldsBeaten[1] = 1
-
-		--Add worlds beaten to item total
-		_haveItem = _haveItem + _worldsBeaten[1]
-
-		--Write to item total
-		WriteArray(_checkItem1[gameVer], {0x02, 0x08, _haveItem})
-
+	if self.GateCoords[current_spirit] == nil then
+		return
 	end
-	if self.GateCoords[_activeSpirit][2] ~= nil then --2nd gate exists
-		if _x == self.GateCoords[_activeSpirit][2][1] and _y == self.GateCoords[_activeSpirit][2][2] then
-			--Hovering over gate 2
-			--Calculate how many worlds are needed. Add what's not needed to total
-			local _req = self.GateCoords[_activeSpirit][1][3]
-			local _haveItem = _baseItm+(7-_req)
 
-			--TODO: Calculate how many worlds are beaten
-			_worldsBeaten[2] = 2
+	--Function is called whenever spiritId changes
 
-			--Add worlds beaten to item total
-			_haveItem = _haveItem + _worldsBeaten[2]
+	--Gate 1 conditions are tied to amount of blank item 1
+	--Gate 2 conditions are tied to amount of blank item 2
 
-			--Write to item total
-			WriteArray(_checkItem2[gameVer], {0x01, 0x08, _haveItem})
+	local _blank1Amt = _baseItm+(self:WorldsBeaten(self.GateCoords[current_spirit][1][3]))
+	local _blank2Amt = 0
+	if self.GateCoords[_activeSpirit][2] ~= nil then --Spirit has 2 gates
+		_blank2Amt = _baseItm+(self:WorldsBeaten(self.GateCoords[current_spirit][2][3]))
+	end
+
+	WriteArray(_checkItem1[gameVer], {0x01, 0x08, _blank1Amt})
+	if _blank2Amt > 0 then
+		WriteArray(_checkItem2[gameVer], {0x02, 0x08, _blank2Amt})
+	end
+end
+
+function LBoard:WorldsBeaten(character)
+	local _worldsBeaten = 0
+	if character == 1 then --Tally Sora worlds
+		local _soraFlags = {
+			ReadByte(WorldFlags.laCiteDesCloches.sora.story[gameVer]),
+			ReadByte(WorldFlags.theGrid.sora.story[gameVer]),
+			ReadByte(WorldFlags.prankstersParadise.sora.story[gameVer]),
+			ReadByte(WorldFlags.countryOfMusketeers.sora.story[gameVer]),
+			ReadByte(WorldFlags.symphonyOfSorcery.sora.story[gameVer]),
+			ReadByte(WorldFlags.traverseTown.sora.story[gameVer]+0x03),
+			ReadByte(WorldFlags.theWorldThatNeverWas.sora.story[gameVer])
+		}
+		for x in _soraFlags do
+			if x > 0x10 then
+				_worldsBeaten = _worldsBeaten + 1
+			end
+		end
+	else --Tally Riku worlds
+		local _rikuFlags = {
+			ReadByte(WorldFlags.laCiteDesCloches.riku.story[gameVer]),
+			ReadByte(WorldFlags.theGrid.riku.story[gameVer]),
+			ReadByte(WorldFlags.prankstersParadise.riku.story[gameVer]),
+			ReadByte(WorldFlags.countryOfMusketeers.riku.story[gameVer]),
+			ReadByte(WorldFlags.symphonyOfSorcery.riku.story[gameVer]),
+			ReadByte(WorldFlags.traverseTown.riku.story[gameVer]+0x02),
+			ReadByte(WorldFlags.theWorldThatNeverWas.riku.story[gameVer]+0x01) --For defeating ansem
+		}
+		for x in _rikuFlags do
+			if x > 0x10 then
+				_worldsBeaten = _worldsBeaten + 1
+			end
 		end
 	end
+	return _worldsBeaten
+end
+
+current_spirit = 0
+function LBoard:CheckSpiritChange()
+	local _spiritPtr = GetPointer(_activeBoard[gameVer], _activeBoardOffset)
+	local _activeSpirit = ReadByte(_spiritPtr, true)
+
+	if _activeSpirit > 0 and _activeSpirit < 55 then
+		if _activeSpirit ~= current_spirit then
+			current_spirit = _activeSpirit
+			self:OnSpiritChange()
+		end
+	end
+end
+
+function LBoard:OnSpiritChange()
+	self:CheckGateReqs()
 end
 
 local _inMenu = false
@@ -228,7 +262,7 @@ function LBoard:Update()
 	_inMenu = true
 
 	_pos = self:CheckCursorPos()
-
+	self:CheckGateReqs()
 	self:ChangeItemNames()
 	self:CheckRedeems()
 	self:DisplayOwningPlayer()
