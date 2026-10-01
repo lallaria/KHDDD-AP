@@ -25,8 +25,60 @@ LBoard.GateCoords = {
 	--First and Second indexes are coordinates for the gates
 	--Third index is the type of gate (1 or 2 for Sora or Riku world)
 	--Fourth index is the number of items needed to fulfill
-	{{2, 0, 1, 5}, {2, 2, 1, 3}}, --Meow Wow
-	{{3, 1, 1, 4}, {1, 3, 1, 2}}  --Tama Sheep
+	{{2, 0, 0, 10}, {2, 2, 0, 10}}, --Meow Wow
+	{{3, 1, 0, 10}, {1, 3, 0, 10}}, --Tama Sheep
+	{{3,1,0,10}, {1,3,0,10}}, 	  	--Yoggy Ram
+	{{2,1,0,10}, {3,2,0,10}},		--Komory Bat
+	{{2,3,0,10}, {1,4,0,10}},		--Pricklemane
+	{{2,2,0,10}},					--Hebby Repp
+	{{4,1,0,10}, {1,4,0,10}},		--Sir Kyroo
+	{{3,2,0,10}},					--Toximander
+	{{2,2,0,10}, {1,4,0,10}},		--Fin Fatale
+	{{2,4,0,10}},					--Tatsu Steed
+	{{3,3,0,10}},					--Necho Cat
+	{{3,1,0,10}},					--Thunderaffe
+	{{2,1,0,10}, {1,4,0,10}},		--Kooma Panda
+	{{2,1,0,10}, {2,3,0,10}},		--Pegaslick
+	{{3,1,0,10}},					--Iceguin Ace
+	{{3,0,0,10}},					--Peepsta Hoo
+	{{4,3,0,10}},					--Escarglow
+	{{1,1,0,10}, {3,2,0,10}},		--KO Kabuto
+	{{3,4,0,10}},					--Wheeflower
+	{{3,0,0,10}, {3,3,0,10}},		--Ghostabocky
+	{{3,3,0,10}},					--Zolephant
+	{{2,3,0,10}, {4,3,0,10}},		--Juggle Pup
+	{{2,3,0,10}, {4,4,0,10}},		--Halbird
+	{{3,2,0,10}},					--Staggerceps
+	{{2,2,0,10}},					--Fishbone
+	{{1,2,0,10}, {2,2,0,10}},		--Flowbermeow
+	{{3,1,0,10}},					--Cyber Yog
+	{{1,1,0,10}, {3,5,0,10}},		--Chef Kyroo
+	{{1,3,0,10}, {3,3,0,10}},		--Lord Kyroo
+	{{3,1,0,10}, {3,4,0,10}},		--Tatsu Blaze
+	{{4,1,0,10}, {4,3,0,10}},		--Electricorn
+	{{2,2,0,10}},					--Woeflower
+	{{1,1,0,10}, {0,3,0,10}},		--Jestabocky
+	{{3,1,0,10}},					--Eaglider
+	{{2,1,0,10}, {2,3,0,10}},		--Me Me Bunny
+	{{4,1,0,10}},					--Drill Sye
+	{{5,1,0,10}, {1,2,0,10}},		--Tyranto Rex
+	{{1,3,0,10}, {2,4,0,10}},		--Majik Lapin
+	{{1,2,0,10}, {3,3,0,10}},		--Cera Terror
+	{{4,2,0,10}, {1,4,0,10}},		--Skelterwild
+	{{7,3,0,10}, {1,7,0,10}},		--Ducky Goose
+	{{2,3,0,10}},					--Aura Lion
+	{{2,1,0,10}},					--Ryu Dragon
+	{{7,0,0,10}, {0,7,0,10}},		--Drak Quack
+	{{1,0,0,10}},					--Keeba Tiger
+	{{2,1,0,10}, {2,3,0,10}},		--Meowjesty
+	{{3,1,0,10}},					--Sudo Neku
+	{{2,1,0,10}, {0,4,0,10}},		--Frootz Cat
+	{{1,2,0,10}, {3,2,0,10}},		--Ursa Circus
+	{{4,0,0,10}, {0,3,0,10}},		--Kab Kannon
+	{{4,1,0,10}, {3,4,0,10}},		--R & R Seal
+	{{2,1,0,10}, {1,6,0,10}},		--Catanuki
+	{{4,3,0,10}},					--Beatalike
+	{{0,1,0,10}, {6,2,0,10}},		--Tubguin Ace
 }
 
 LBoard.SpiritItems = {}
