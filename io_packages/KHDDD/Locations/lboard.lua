@@ -16,15 +16,17 @@ local _activeBoardOffset = 0x490
 local _cursorPosOffset = 0x350 --Uses same addr as activeboard
 --+0 is x pos, +4 is y pos
 
-LBoard.BoardReqs = {}
---Example Req: {{0, 7}, {1, 3}} --Require 7 sora worlds on gate 1 and 3 riku worlds on gate 2
-
 LBoard.GateCoords = {
-	{{2, 0}, {2, 2}}, --Meow Wow
-	{{3, 1}, {1, 3}}  --Tama Sheep
+	--First and Second indexes are coordinates for the gates
+	--Third index is the type of gate (1 or 2 for Sora or Riku world)
+	--Fourth index is the number of items needed to fulfill
+	{{2, 0, 1, 5}, {2, 2, 2, 3}}, --Meow Wow
+	{{3, 1, 2, 4}, {1, 3, 2, 2}}  --Tama Sheep
 }
 
 LBoard.SpiritItems = {}
+
+local _pos = {}
 
 function LBoard:FillBoardRewards() --Fill board nodes with generic item
 	local _padding = 12
@@ -58,10 +60,11 @@ end
 function LBoard:ChangeGateReqs(spirit, gateNum, gateType, cnt)
 	--Spirit: Which spirit to change the gate for
 	--GateNum: Whether Gate 1 or Gate 2 are being changed
-	--GateType: 0 for Sora Worlds Cleared, 1 for Riku Worlds Cleared
+	--GateType: 1 for Sora Worlds Cleared, 2 for Riku Worlds Cleared
 	--Cnt: How many worlds are needed to clear
 
-	self.BoardReqs[spirit][gateNum] = {gateType, cnt}
+	self.GateCoords[spirit][gateNum][3] = gateType
+	self.GateCoords[spirit][gateNum][4] = cnt
 end
 
 function LBoard:CheckCursorPos() --Returns x and y coordinates of cursor on the link board
@@ -138,7 +141,7 @@ end
 function LBoard:DisplayOwningPlayer()
 	local _nameWritten = false
 
-	local _pos = self:CheckCursorPos()
+	--local _pos = self:CheckCursorPos()
 	local _x = _pos[1]
 	local _y = _pos[2]
 	local _spiritPtr = GetPointer(_activeBoard[gameVer], _activeBoardOffset)
@@ -146,7 +149,6 @@ function LBoard:DisplayOwningPlayer()
 
 	local _brdScan = Boards[_activeSpirit]
 
-	--ConsolePrint("Scanning index "..tostring(_y+1)..","..tostring(_x+1))
 	if _brdScan ~= nil then
 		if _brdScan[_y+1] ~= nil then
 			if _brdScan[_y+1][_x+1] ~= nil then
@@ -165,17 +167,68 @@ function LBoard:DisplayOwningPlayer()
 
 end
 
+local _worldsBeaten = {0, 0}
+function LBoard:CheckGateReqs()
+	local _x = _pos[1]
+	local _y = _pos[2]
+	local _spiritPtr = GetPointer(_activeBoard[gameVer], _activeBoardOffset)
+	local _activeSpirit = ReadByte(_spiritPtr, true)
+
+	--For setting required items
+	local _maxReq = 7 ----At least 7 items are needed
+	local _baseItm = 100-_maxReq
+
+	--Are we hovering over a gate
+	if _x == self.GateCoords[_activeSpirit][1][1] and _y == self.GateCoords[_activeSpirit][1][2] then
+		--Hovering over gate 1
+
+		--Calculate how many worlds are needed. Add what's not needed to total
+		local _req = self.GateCoords[_activeSpirit][1][3]
+		local _haveItem = _baseItm+(7-_req)
+
+		--TODO: Calculate how many worlds are beaten
+		_worldsBeaten[1] = 1
+
+		--Add worlds beaten to item total
+		_haveItem = _haveItem + _worldsBeaten[1]
+
+		--Write to item total
+		WriteArray(_checkItem1[gameVer], {0x02, 0x08, _haveItem})
+
+	end
+	if self.GateCoords[_activeSpirit][2] ~= nil then --2nd gate exists
+		if _x == self.GateCoords[_activeSpirit][2][1] and _y == self.GateCoords[_activeSpirit][2][2] then
+			--Hovering over gate 2
+			--Calculate how many worlds are needed. Add what's not needed to total
+			local _req = self.GateCoords[_activeSpirit][1][3]
+			local _haveItem = _baseItm+(7-_req)
+
+			--TODO: Calculate how many worlds are beaten
+			_worldsBeaten[2] = 2
+
+			--Add worlds beaten to item total
+			_haveItem = _haveItem + _worldsBeaten[2]
+
+			--Write to item total
+			WriteArray(_checkItem2[gameVer], {0x01, 0x08, _haveItem})
+		end
+	end
+end
+
 local _inMenu = false
 function LBoard:Update()
 	--Check if player is in the spirit menu
 	if ReadByte(_inSpiritMenu[gameVer]) ~= 0x06 or ReadByte(_canMove[gameVer]) ~= 0x04 then
-		if _inMenu then
+		if _inMenu then --TODO: Find condition for being specifically on the link board
 			self:Exit()
 			_inMenu = false
 		end
 		return
 	end
 	_inMenu = true
+
+	_pos = self:CheckCursorPos()
+
 	self:ChangeItemNames()
 	self:CheckRedeems()
 	self:DisplayOwningPlayer()
