@@ -559,6 +559,8 @@ function PatchTask:ResetRewards()
 	end
 end
 
+local _localIcon = 15
+local _remoteIcon = 7 --PRIZE, the yellow orb no vanilla reward shows
 function PatchTask:LinkBoardReward(locId, itemId)
 	local _baseLocId = 2690000 --First 2 0's for spirit ID, last 2 0's for node number
 
@@ -577,11 +579,13 @@ function PatchTask:LinkBoardReward(locId, itemId)
 
 	if hasValue(_validItems, _item.Type) == true then --Item can go into spirit board normally
 		LBoard:WriteBoardReward(_spiritId, _itemBytes, _nodeNum)
+		LBoard:SetNodeIcon(_spiritId, _nodeNum, nil)
 	else --Write item name to spirit dict
 		local _strLength = string.len("Archipelago Item")
 		if LBoard.SpiritItems[_spiritId] == nil then --Initialize table
 			LBoard.SpiritItems[_spiritId] = {}
 		end
+		LBoard:SetNodeIcon(_spiritId, _nodeNum, _localIcon)
 		ConsolePrint("Writing ".._item.Name.." to spirit "..tostring(_spiritId).." node "..tostring(_nodeNum))
 		LBoard.SpiritItems[_spiritId][_nodeNum+1] = string.sub(_item.Name, 1, _strLength)
 		LBoard:NameToBoard(_spiritId, _nodeNum, "Special")
@@ -598,7 +602,7 @@ function PatchTask:RemoteBoardRewards(spiritId, nodeNum, itemName, playerName)
 		LBoard.SpiritItems[_spiritId] = {}
 	end
 
-	--TODO: Get name of owning player for description
+	LBoard:SetNodeIcon(_spiritId, _nodeNum-1, _remoteIcon)
 	LBoard.SpiritItems[_spiritId][_nodeNum] = string.sub(itemName, 1, _strLength)
 	LBoard:NameToBoard(_spiritId, _nodeNum-1, playerName)
 end

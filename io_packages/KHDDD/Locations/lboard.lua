@@ -3,20 +3,22 @@ local LBoard = {}
 --Items used for gate requirements
 local _checkItem1 = {0xA4C538, 0xA4BDB8} --First blank toy for spirit board
 local _checkItem2 = {0xA4C53C, 0xA4BDBC} --Second blank toy for spirit board
-local _prizeIdNameStart = {0x1096A9B8} --34 bytes per name
-local _commandHeader = {0x10B7D624}
+local _prizeIdNameStart = {0x1096A9B8, 0x1096A238} --34 bytes per name
+local _commandHeader = {0x10B7D624, 0x10B7CEA4}
 --local _footerTxt = {0x1191A370}
-local _commandFooter = {0x10B7D376}
-local _itemGateFooter = {0x10B7D54C}
-local _checkpointTxt = {0x10B7D70E}
-local _itemsCheckpointTxt = {0x10B7D73C}
+local _commandFooter = {0x10B7D376, 0x10B7CBF6}
+local _itemGateFooter = {0x10B7D54C, 0x10B7CDCC}
+local _checkpointTxt = {0x10B7D70E, 0x10B7CF8E}
+local _itemsCheckpointTxt = {0x10B7D73C, 0x10B7CFBC}
+
+local _lbtList = {0xA3D000, 0xA3C880} --Pointer to lbt_list.bin, the loaded reward table; spirit blocks of 0xC0 at +0x10
 
 --Determine if player is in the spirit menu
 local _inSpiritMenu = {0xA9B2DC, 0xA9AB5C}
 local _canMove = {0xA9B2F4, 0xA9AB74}
 
 --Find Spirit ID of board that is currently being viewed
-local _activeBoard = {0x9E9A40} --TODO: Find EGS address
+local _activeBoard = {0x9E9A40, 0x9E9A30}
 local _activeBoardOffset = 0x490
 local _cursorPosOffset = 0x350 --Uses same addr as activeboard
 --+0 is x pos, +4 is y pos
@@ -343,6 +345,17 @@ function LBoard:OnSpiritChange()
 	writeTxtToGame(_commandFooter[gameVer], "Grants you the item shown.", 2)
 end
 
+function LBoard:OnBoardEnter()
+	--Do some stuff after entering the board
+end
+
+--Icon of a node's reward slot (0-based) as an f_de505.txa anim index, 0x00-0x15 in the order of AsmEdits:LinkBoardIcons'
+--name table (7 PRIZE, 14 ?B, 15 ?Y), or nil for the game's own. Shows on the next board open or L/R spirit switch.
+function LBoard:SetNodeIcon(spirit, slot, icon)
+	WriteByte(GetPointer(_lbtList[gameVer], 0x10 + spirit*0xC0 + slot*12 + 3), icon and (0x80 | icon) or 0, true)
+end
+
+
 local _inMenu = false
 function LBoard:Update()
 	--Check if player is in the spirit menu
@@ -353,7 +366,10 @@ function LBoard:Update()
 		end
 		return
 	end
-	_inMenu = true
+	if _inMenu == false then
+		self:OnBoardEnter()
+		_inMenu = true
+	end
 
 	_pos = self:CheckCursorPos()
 	self:CheckSpiritChange()

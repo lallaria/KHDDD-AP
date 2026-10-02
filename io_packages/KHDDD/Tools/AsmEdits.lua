@@ -18,6 +18,7 @@ end
 function AsmEdits:Init()
 	self:OpenAllChests()
 	self:IconReplace()
+  self:LinkBoardIcons()
 end
 
 --Change/Nop functions that would prevent chests from opening
@@ -36,6 +37,40 @@ function AsmEdits:OpenAllChests()
     --Prevent battle levels from resetting from certain story events
     local _btlFunc = {0x23A980, 0x23A9F0} --TODO: EGS address was 0x23A970; verify
     WriteArray(_btlFunc[gameVer], {0x90, 0x90})
+end
+
+ local BoardIconMax = 0x15 --HP, the last anim name; the table continues with sound names
+
+--The following function contains ai-generated code; documentation included
+function AsmEdits:LinkBoardIcons()
+    --Link board node icons. The PC link board's build (CDEAbilityLinkBoard@HD, Steam 0x45ED80) gives each reward node an
+    --icon index from its reward's command category; the node then plays the f_de505.txa anim that the name table at
+    --{0x9DF3F0, 0x9DF3E0} lists at that index. Its icon store now jumps to a stub that reads byte 3 of the node's
+    --lbt_list.bin reward record, which the game never reads: 0x80 | index replaces the icon (LBoard:SetNodeIcon), any
+    --other value keeps the game's. Board open and L/R spirit switches rebuild every icon, so a change shows on the next one.
+    local _storeSite = {0x45F0A8, 0x45ECD8} --was: 88 42 02 44 0F B6 C0  mov [rdx+2], al; movzx r8d, al
+    local _storeNext = {0x45F0AF, 0x45ECDF} --test al, al, then the upgrade and stat icon special cases
+    local _nodeDone = {0x45F145, 0x45ED75}  --inc r11d, the node loop's continue
+    local _stub = 0x77FB20
+    local _code = {
+      0x44, 0x0F, 0xB6, 0x42, 0x0A,             --+0x00          movzx r8d, byte [rdx+0xA]  reward slot, already checked < 0x10
+      0x45, 0x6B, 0xC0, 0x0C,                   --+0x05          imul r8d, r8d, 12
+      0x4C, 0x03, 0x87, 0x48, 0x03, 0x00, 0x00, --+0x09          add r8, [rdi+0x348]        spirit's lbt_list block, already checked non-null
+      0x45, 0x0F, 0xB6, 0x40, 0x03,             --+0x10          movzx r8d, byte [r8+3]
+      0x41, 0x83, 0xC0, 0x80,                   --+0x15          add r8d, -0x80
+      0x41, 0x83, 0xF8, BoardIconMax,           --+0x19          cmp r8d, BoardIconMax
+      0x77, 0x09,                               --+0x1D          ja +0x28
+      0x44, 0x88, 0x42, 0x02,                   --+0x1F          mov [rdx+2], r8b
+      0xE9, 0, 0, 0, 0,                         --+0x23          jmp node done              skips the special cases
+      0x88, 0x42, 0x02,                         --+0x28 keep:    mov [rdx+2], al
+      0x44, 0x0F, 0xB6, 0xC0,                   --+0x2B          movzx r8d, al
+      0xE9, 0, 0, 0, 0}                         --+0x2F          jmp store next
+    putRel32(_code, 0x24, _stub + 0x28, _nodeDone[gameVer])
+    putRel32(_code, 0x30, _stub + 0x34, _storeNext[gameVer])
+    WriteArray(_stub, _code)
+    local _jmp = {0xE9, 0, 0, 0, 0, 0x90, 0x90} --jmp stub; r8 is dead here, the loop redefines it before any read
+    putRel32(_jmp, 0x01, _storeSite[gameVer] + 5, _stub)
+    WriteArray(_storeSite[gameVer], _jmp)
 end
 
 --Big item pictures (the "OBTAINED" popup and menus) for key items other than 0x400, treats above 0x70D and toys above
