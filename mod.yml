@@ -119,6 +119,10 @@ assets:
   method : copy
   source:
   - name: io_packages/KHDDD/Tasks/SoftlockTask.lua
+- name: scripts/io_packages/KHDDD/Tasks/ResetTask.lua
+  method : copy
+  source:
+  - name: io_packages/KHDDD/Tasks/ResetTask.lua
 - name: scripts/io_packages/KHDDD/Tasks/PatchTask.lua
   method : copy
   source:
