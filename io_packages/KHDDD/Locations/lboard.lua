@@ -25,8 +25,8 @@ local _cursorPosOffset = 0x350 --Uses same addr as activeboard
 
 LBoard.GateCoords = {
 	--First and Second indexes are coordinates for the gates
-	--Third index is the type of gate (1 or 2 for Sora or Riku world)
-	--Fourth index is the number of items needed to fulfill
+	--Third index is the type of gate (1 or 2 for Sora or Riku world); 0 until slot data sets it, which leaves the gate open
+	--Fourth index is the number of worlds needed to fulfill
 	{{2, 0, 0, 10}, {2, 2, 0, 10}}, --Meow Wow
 	{{3, 1, 0, 10}, {1, 3, 0, 10}}, --Tama Sheep
 	{{3,1,0,10}, {1,3,0,10}}, 	  	--Yoggy Ram
@@ -203,33 +203,18 @@ function LBoard:ChangeFooter()
 		return
 	end
 
-	local _x = _pos[1]
-	local _y = _pos[2]
-
 	--36 characters for footer
 	local _writeStr = "Opens after clearing specified worlds."
 	writeTxtToGame(_itemGateFooter[gameVer], _writeStr, 2)
-	
+
 	--Write owned variable details
 	--WriteArray(_itemGateFooter[gameVer]+(string.len(_writeStr)*2)-1, {0x00, 0x24, 0x00, 0x6E, 0x00, 0x28, 0xE0, 0x00, 0x00})
-	
-	if _gates[1][1] == _x and _gates[1][2] == _y then --Gate active; write to headers
-		local _char = "Sora"
-		if _gates[1][3] == 2 then
-			_char = "Riku"
-		end
-		local _amtRemaining = math.max(_gates[1][4]-self:WorldsBeaten(_gates[1][3]), 0)
-		writeTxtToGame(_checkpointTxt[gameVer], _char.." World", 2)
-		writeTxtToGame(_itemsCheckpointTxt[gameVer], tostring(_amtRemaining), 2)
-	elseif _gates[2] ~= nil then
-		if _gates[2][1] == _x and _gates[2][2] == _y then
-		local _char = "Sora"
-		if _gates[2][3] == 2 then
-			_char = "Riku"
-		end
-		local _amtRemaining = math.max(_gates[2][4]-self:WorldsBeaten(_gates[2][3]), 0)
-		writeTxtToGame(_checkpointTxt[gameVer], _char.." World", 2)
-		writeTxtToGame(_itemsCheckpointTxt[gameVer], tostring(_amtRemaining), 2)
+
+	for _, gate in ipairs(_gates) do
+		if gate[1] == _pos[1] and gate[2] == _pos[2] then --Gate active; write to headers
+			local _char = ({"Sora", "Riku"})[gate[3]] or "Any"
+			writeTxtToGame(_checkpointTxt[gameVer], _char.." World", 2)
+			writeTxtToGame(_itemsCheckpointTxt[gameVer], tostring(self:GateWorldsLeft(gate)), 2)
 		end
 	end
 end
@@ -263,31 +248,24 @@ function LBoard:DisplayOwningPlayer()
 
 end
 
+function LBoard:GateWorldsLeft(gate)
+	if gate[3] == 0 then
+		return 0
+	end
+	return math.max(gate[4]-self:WorldsBeaten(gate[3]), 0)
+end
+
 function LBoard:CheckGateReqs()
-
-	--For setting required items
-	local _maxReq = 7 ----At least 7 items are needed
-	local _baseItm = 7-_maxReq
-
-	--Are we hovering over a gate
-	if self.GateCoords[current_spirit] == nil then
+	--Gate n costs 7 of blank toy n (lboard_genned.bin); every board shares the toys, so rewrite them per spirit
+	local _gateCost = 7
+	local _gates = self.GateCoords[current_spirit]
+	if _gates == nil then
 		return
 	end
 
-	--Function is called whenever spiritId changes
-
-	--Gate 1 conditions are tied to amount of blank item 1
-	--Gate 2 conditions are tied to amount of blank item 2
-
-	local _blank1Amt = _baseItm+(self:WorldsBeaten(self.GateCoords[current_spirit][1][3]))+(_maxReq-self.GateCoords[current_spirit][1][4])
-	local _blank2Amt = 0
-	if self.GateCoords[current_spirit][2] ~= nil then --Spirit has 2 gates
-		_blank2Amt = _baseItm+(self:WorldsBeaten(self.GateCoords[current_spirit][2][3]))+(_maxReq-self.GateCoords[current_spirit][2][4])
-	end
-
-	WriteArray(_checkItem1[gameVer], {0x01, 0x08, _blank1Amt})
-	if _blank2Amt > 0 then
-		WriteArray(_checkItem2[gameVer], {0x02, 0x08, _blank2Amt})
+	WriteArray(_checkItem1[gameVer], {0x01, 0x08, _gateCost-self:GateWorldsLeft(_gates[1])})
+	if _gates[2] ~= nil then
+		WriteArray(_checkItem2[gameVer], {0x02, 0x08, _gateCost-self:GateWorldsLeft(_gates[2])})
 	end
 end
 
@@ -381,6 +359,7 @@ end
 
 function LBoard:Exit() --Player left the link board
 	self:WriteFillerNames()
+	current_spirit = 0 --Re-checks gates when the same board is opened again
 end
 
 return LBoard

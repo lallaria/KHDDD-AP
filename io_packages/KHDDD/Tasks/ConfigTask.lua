@@ -20,7 +20,8 @@ ConfigTask.SlotDataTypes = {
   RemoteItemNotifs = 11,
   PatchInfo = 12,
   VanillaLevels = 13,
-  EmblemReqs = 14
+  EmblemReqs = 14,
+  GateReqs = 16
 }
 
 function ConfigTask:ParseSlotData(slotType, msgVal)
@@ -54,6 +55,8 @@ function ConfigTask:ParseSlotData(slotType, msgVal)
     	self:SetVanillaLevels(msgVal)
     elseif slotType == self.SlotDataTypes.EmblemReqs then
     	self:SetEmblemReq(msgVal)
+    elseif slotType == self.SlotDataTypes.GateReqs then
+    	self:SetGateReqs(msgVal)
     end
 end
 
@@ -179,6 +182,20 @@ function ConfigTask:SetEmblemReq(msgVal)
 	writeTxtToGame(ItemOverwrite.toy14DescAddr[gameVer], _reqStr, 1)
 	ConsolePrint("Setting required emblems to "..msgVal[1])
 	ItemHandler:CheckEmblems() --Catches a count reached before the requirement was known
+end
+
+function ConfigTask:SetGateReqs(msgVal) --"[[spirit, character, gate 1 worlds, gate 2 worlds], ...]"
+	for _entry in msgVal[1]:gmatch("%[([%d,%s]+)%]") do
+		local _vals = {}
+		for _num in _entry:gmatch("%d+") do
+			table.insert(_vals, tonumber(_num))
+		end
+		for _gate=1, #_vals-2 do
+			LBoard:ChangeGateReqs(_vals[1], _gate, _vals[2], _vals[_gate+2])
+		end
+	end
+	ConsolePrint("Setting gate requirements to "..msgVal[1])
+	LBoard:CheckGateReqs()
 end
 
 function ConfigTask:SetGoal(msgVal)
