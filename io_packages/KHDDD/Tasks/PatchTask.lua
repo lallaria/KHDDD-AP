@@ -581,7 +581,7 @@ function PatchTask:LinkBoardReward(locId, itemId)
 		LBoard:WriteBoardReward(_spiritId, _itemBytes, _nodeNum)
 		LBoard:SetNodeIcon(_spiritId, _nodeNum, nil)
 	else --Write item name to spirit dict
-		local _strLength = string.len("Archipelago Item")
+		local _strLength = string.len("Archipelago Item")-2
 		if LBoard.SpiritItems[_spiritId] == nil then --Initialize table
 			LBoard.SpiritItems[_spiritId] = {}
 		end

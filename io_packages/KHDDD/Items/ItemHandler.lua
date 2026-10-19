@@ -170,6 +170,7 @@ function ItemHandler:FindExistingSlot(addrStart, invSize, bytes, byteSize, offse
             ConsolePrint("First byte matched but not following ones")
           end
       end
+      _resAddr = _foundAddr
       if _resAddrFound then
         return _resAddr
       end
@@ -843,7 +844,7 @@ function ItemHandler:CraftSpirits(value)
   local _spiritOffset = 0x100 --Add this to base address for each spirit in inventory
 
   --TODO: Make this account for local spirit crafting
-  local _spiritAddr = _spiritInv[gameVer] + (_spiritOffset * #self.State.Recipes)
+  local _spiritAddr = _spiritInv[gameVer] + (_spiritOffset * (#self.State.Recipes-1))
 
   --Write Spirit Type to inventory
   WriteInt(_spiritAddr, _spiritId)

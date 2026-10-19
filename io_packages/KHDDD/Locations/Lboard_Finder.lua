@@ -557,7 +557,7 @@ LBoardFinder.LBoard = nil
 
 function LBoardFinder:FinderUpdate()
 	local _activeBoardInfo = GetPointer(_activeBoard[gameVer], _activeBoardOffset)
-	local _activeInfo = ReadArray(_activeBoardInfo, 6, true)
+	local _activeInfo = ReadArray(_activeBoardInfo, 4, true)
 
 	--Is a spirit board active
 	for x=2, #_activeInfo do
@@ -694,7 +694,7 @@ function LBoardFinder:PatchBoards() --TODO: Only mod boards of spirits in party
 			for y=1, #CurrentBoard[x] do
 				local ind = offset+(padding*entry)+self.LBoard
 				if CurrentBoard[x][y][1] ~= NT.N then
-					local byteCoord = CoordsToByte({x, y})
+					local byteCoord = CoordsToByte({x-1, y-1})
 
 					--Wipe entry for node to clear unset data
 					WriteArray(ind, {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, true)
@@ -721,7 +721,7 @@ function LBoardFinder:PatchBoards() --TODO: Only mod boards of spirits in party
 						--Make cost 0
 						WriteByte(ind+0x08, 0x00, true)
 						--Set reward index
-						WriteByte(ind+0x0A, CurrentBoard[x][y][2], true)
+						WriteByte(ind+0x0A, CurrentBoard[x][y][3], true)
 					end
 
 					--Increment entry count

@@ -871,7 +871,7 @@ function fixMenuOptions()
   local _rikuProg = ReadArray(WorldFlags.traverseTown.riku.story[gameVer], 0x08)
 
   --Prevent tutorial message from popping up for the command deck
-  WriteArray(MemoryAddresses.commandDeckPopup[gameVer], {0x10, 0x0A})
+  WriteArray(MemoryAddresses.commandDeckPopup[gameVer], {0x10, 0x0A, 0x11, 0x0A}) --Wipes command and potion tutorial
   --Remove tutorial messages for world map and drop
   local mapDropTutorial = {0xA4C3F2, 0xA4BC72}
   WriteArray(mapDropTutorial[gameVer], {0x07, 0x0A, 0x00, 0x00, 0x00, 0x00, 0x0A, 0x0A})
@@ -1498,8 +1498,8 @@ function HandleMessage(msg)
     end
 
 
-  elseif msg.type == MessageTypes.GetCurrentIndex then
-    SendToApClient(MessageTypes.GetCurrentIndex, {tostring(currentReceivedIndex)})
+  elseif msg.type == MessageTypes.GetCurrentIndex then 
+    SendToApClient(MessageTypes.GetCurrentIndex, {tostring(ReadShort(WorldFlags.destinyIslands.sora.story[gameVer]+0x07))})
 
   elseif msg.type == MessageTypes.ScoutBoard then
     PatchTask:RemoteBoardRewards(msg.values[1], msg.values[2], msg.values[3], msg.values[4])
@@ -1806,7 +1806,7 @@ function sendToInv(itemId)
   elseif _item.Type == "Recipe" then --Recipes don't need to be re-added to our state
     ItemHandler:RecipeToInv(itemId)
   else
-    ItemHandler:Receive(_item.Type, itemId)
+    ItemHandler:Receive(_item.Type, itemId, ReadShort(WorldFlags.destinyIslands.sora.story[gameVer]+0x07))
   end
 end
 

@@ -132,6 +132,7 @@ function LBoard:CheckCursorPos() --Returns x and y coordinates of cursor on the 
 end
 
 function LBoard:ChangeItemNames()
+	self:WriteFillerNames()
 	local _currBoardAddr = GetPointer(_activeBoard[gameVer], _activeBoardOffset)
 	local _spiritId = ReadByte(_currBoardAddr, true)
 
@@ -157,7 +158,7 @@ function LBoard:CheckRedeems()
 		local _boardVal = boardVals[x+1]
 		local _currVal = ReadArray(_spiritInv[gameVer]+(x*0x100)+_redeemOffset, 2)
 		if _currVal[1] > _boardVal[1] then --One of the first 8 nodes redeemed
-			_bitTbl = toBits(_currVal[1] - _boardVal[2])
+			_bitTbl = toBits(_currVal[1] - _boardVal[1])
 			for bit=1, #_bitTbl do
 				if _bitTbl[bit] == 1 then
 					self:RedeemNode(ReadByte(_spiritInv[gameVer]+(x*0x100)), bit)
@@ -167,7 +168,9 @@ function LBoard:CheckRedeems()
 		if _currVal[2] > _boardVal[2] then --One of the last 8 nodes redeemed
 			_bitTbl = toBits(_currVal[2] - _boardVal[2])
 			for bit=1, #_bitTbl do
-				self:RedeemNode(ReadByte(_spiritInv[gameVer]+(x*0x100)), bit+8)
+				if _bitTbl[bit] == 1 then
+					self:RedeemNode(ReadByte(_spiritInv[gameVer]+(x*0x100)), bit+8)
+				end
 			end
 		end
 
@@ -342,6 +345,7 @@ end
 
 function LBoard:OnSpiritChange()
 	self:CheckGateReqs()
+	self:ChangeItemNames()
 	writeTxtToGame(_commandFooter[gameVer], "Grants you the item shown.", 2)
 end
 
@@ -354,6 +358,7 @@ end
 local _lboardAddr = nil
 
 local _inMenu = false
+local _boardLoaded = false
 function LBoard:Update()
 	--Check if player is in the spirit menu
 	if ReadByte(_inSpiritMenu[gameVer]) ~= 0x06 or ReadByte(_canMove[gameVer]) ~= 0x04 then
@@ -364,18 +369,23 @@ function LBoard:Update()
 		return
 	end
 	if _inMenu == false then
+		self:ChangeItemNames() --Ensure updated item names are used
 		_inMenu = true
 	end
 
 	--Make sure lboard exists before doing anything else
 	LBoardFinder:FinderUpdate()
 	if LBoardFinder.LBoard == nil then
+		_boardLoaded = false
 		return
+	end
+	if not _boardLoaded then
+		self:ChangeItemNames()
+		_boardLoaded = true
 	end
 	--LBoardFinder:PatchBoards()
 	_pos = self:CheckCursorPos()
 	self:CheckSpiritChange()
-	self:ChangeItemNames()
 	self:CheckRedeems()
 	self:DisplayOwningPlayer()
 	self:ChangeFooter()
