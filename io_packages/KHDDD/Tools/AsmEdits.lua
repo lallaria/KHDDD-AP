@@ -97,11 +97,15 @@ local ItemImages = {
 
 --Small item icons: the "OBTAINED" banner frame (frame table in itemget_02_n.l2d) and the pause menu icon id (icon.l2d
 --draws sprite id - 0x64). Rows are {first id, last id, banner frame, menu icon}; KEEP leaves the game's own choice, and
---the first matching row wins.
+--the first matching row wins. Banner frames in the shipped itemget_02_n.l2d: 0 keyblade, 1 jar, 2 moon, 3 dream bubble,
+--4 lollipop, 5 star (the game's own), 6 Lucky Emblem, 7 Riku stat-up, 8 Sora stat-up, 9 AP logo, 10 scroll, 11 Recusant Sigil.
 local KEEP = 0xFFFF
 local ItemIcons = {
-  {0x0813, 0x0813, 5, KEEP},    --AP item: banner frame 5, which the shipped itemget_02_n.l2d points at the AP logo
-  {0x080D, 0x080D, 6, 0x7A},    --Lucky Emblem: banner frame 6 and menu sprite 22, which the shipped layouts add or point at it
+  {0x0813, 0x0813, 9, KEEP},    --AP item
+  {0x080D, 0x080D, 6, 0x7A},    --Lucky Emblem: menu sprite 22, which the shipped icon.l2d points at it
+  {0x041D, 0x041D, 11, KEEP},   --Recusant Sigil
+  {0x0423, 0x0427, 8, KEEP},    --Sora's stat boosts
+  {0x070F, 0x0713, 7, KEEP},    --Riku's stat boosts
 }
 for id = 0x0401, 0x0421, 2 do --world items get the star, menu sprite 32; 0x041D is the Recusant Sigil
   if id ~= 0x041D then
