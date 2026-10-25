@@ -13,15 +13,9 @@ local _itemsCheckpointTxt = {0x10B7D73C, 0x10B7CFBC}
 
 local _lbtList = {0xA3D000, 0xA3C880} --Pointer to lbt_list.bin, the loaded reward table; spirit blocks of 0xC0 at +0x10
 
---Determine if player is in the spirit menu
-local _inSpiritMenu = {0xA9B2DC, 0xA9AB5C}
-local _canMove = {0xA9B2F4, 0xA9AB74}
-
---Find Spirit ID of board that is currently being viewed
-local _activeBoard = {0x9E9A40, 0x9E9A30}
-local _activeBoardOffset = 0x490
-local _cursorPosOffset = 0x350 --Uses same addr as activeboard
---+0 is x pos, +4 is y pos
+--Board object fields (LBoardFinder.Board)
+local _spiritIdOffset = 0x330
+local _cursorPosOffset = 0x1F0 --+0 is x pos, +4 is y pos
 
 LBoard.GateCoords = {
 	--First and Second indexes are coordinates for the gates
@@ -127,14 +121,20 @@ function LBoard:ChangeGateReqs(spirit, gateNum, gateType, cnt)
 end
 
 function LBoard:CheckCursorPos() --Returns x and y coordinates of cursor on the link board
-	local _cursorAddr = GetPointer(_activeBoard[gameVer], _cursorPosOffset)
+	local _cursorAddr = LBoardFinder.Board+_cursorPosOffset
 	return {ReadByte(_cursorAddr, true), ReadByte(_cursorAddr+0x04, true)}
+end
+
+function LBoard:ActiveSpirit() --Spirit ID of the board being viewed, nil when no board is built
+	if LBoardFinder.Board == nil then
+		return nil
+	end
+	return ReadByte(LBoardFinder.Board+_spiritIdOffset, true)
 end
 
 function LBoard:ChangeItemNames()
 	self:WriteFillerNames()
-	local _currBoardAddr = GetPointer(_activeBoard[gameVer], _activeBoardOffset)
-	local _spiritId = ReadByte(_currBoardAddr, true)
+	local _spiritId = self:ActiveSpirit()
 
 	if self.SpiritItems[_spiritId] ~= nil then
 		for x=1, 16 do
@@ -243,10 +243,7 @@ function LBoard:DisplayOwningPlayer()
 	--local _pos = self:CheckCursorPos()
 	local _x = _pos[1]
 	local _y = _pos[2]
-	local _spiritPtr = GetPointer(_activeBoard[gameVer], _activeBoardOffset)
-	local _activeSpirit = ReadByte(_spiritPtr, true)
-
-	local _brdScan = Boards[_activeSpirit]
+	local _brdScan = Boards[self:ActiveSpirit()]
 
 	if _brdScan ~= nil then
 		if _brdScan[_y+1] ~= nil then
@@ -332,8 +329,7 @@ end
 
 current_spirit = 0
 function LBoard:CheckSpiritChange()
-	local _spiritPtr = GetPointer(_activeBoard[gameVer], _activeBoardOffset)
-	local _activeSpirit = ReadByte(_spiritPtr, true)
+	local _activeSpirit = self:ActiveSpirit()
 
 	if _activeSpirit > 0 and _activeSpirit < 55 then
 		if _activeSpirit ~= current_spirit then
@@ -360,9 +356,8 @@ local _lboardAddr = nil
 local _inMenu = false
 local _boardLoaded = false
 function LBoard:Update()
-	--Check if player is in the spirit menu
-	if ReadByte(_inSpiritMenu[gameVer]) ~= 0x06 or ReadByte(_canMove[gameVer]) ~= 0x04 then
-		if _inMenu then --TODO: Find condition for being specifically on the link board
+	if not LBoardFinder:InSpiritMenu() then
+		if _inMenu then
 			self:Exit()
 			_inMenu = false
 		end
@@ -373,9 +368,9 @@ function LBoard:Update()
 		_inMenu = true
 	end
 
-	--Make sure lboard exists before doing anything else
+	--Patches lboard.bin as soon as Ability Link loads it, before the game builds the board
 	LBoardFinder:FinderUpdate()
-	if LBoardFinder.LBoard == nil then
+	if LBoardFinder.Board == nil then
 		_boardLoaded = false
 		return
 	end
@@ -383,7 +378,6 @@ function LBoard:Update()
 		self:ChangeItemNames()
 		_boardLoaded = true
 	end
-	--LBoardFinder:PatchBoards()
 	_pos = self:CheckCursorPos()
 	self:CheckSpiritChange()
 	self:CheckRedeems()
@@ -391,10 +385,11 @@ function LBoard:Update()
 	self:ChangeFooter()
 end
 
-function LBoard:Exit() --Player left the link board
+function LBoard:Exit() --Player left the spirit menu
 	WriteArray(_checkItem1[gameVer], {0x00, 0x00, 0x00})
 	WriteArray(_checkItem2[gameVer], {0x00, 0x00, 0x00})
 	self:WriteFillerNames()
+	current_spirit = 0 --Gate items were cleared, so the next board view must re-run CheckGateReqs
 end
 
 return LBoard

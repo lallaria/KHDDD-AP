@@ -6,8 +6,16 @@ LBoardFinder = {}
 
 --It is loaded once the link board is opened once
 
-local _fileGroups = {0x14C89890} -- ([0x14C89890 + group*8])
-local _offsetAddr = {0x9DF2EE}
+local _fileGroups = {0x14C89890, 0x14C89110} -- ([0x14C89890 + group*8])
+local _offsetAddr = {0x9DF2EE, 0x9DF2DE}
+
+--Game task lists, one per category; the spirit menu's modes are all category 0x23
+local _taskLists = {0x14C8A460, 0x14C89CE0}
+local _menuTaskCategory = 0x23
+local _taskListVtable = {0x7F6400, 0x7F6510} --Module base is a list's vtable minus this
+local _modeRootVtable = {0x7D7558, 0x7D76B8} --ModeRoot@DEBREED, alive while the spirit menu is open
+local _modeLinkBoardVtable = {0x7D6650, 0x7D67A8} --ModeLinkBoard@HD, alive while Ability Link is open
+local _modeBoardOffset = 0x1E8 --Board object, 0 until the game builds it
 
 local _scanLimit = 2000
 local _lboardFile = "game/de/bin/lboard.bin"
@@ -521,59 +529,84 @@ TubguinAceBoard = {
 	{{NT.N}, {NT.I, CN.R, 5}, {NT.I, CN.R, 4}, {NT.ST, CN.R}, {NT.I, CN.R, 0}, {NT.I, CN.N, 1}}
 }
 
-function Lboard_Addr()
-	--Location file group pointer
-	local _scanOffset = ReadByte(_offsetAddr[gameVer])*8
-	local _pointerAddr = ReadLong(_fileGroups[gameVer]+_scanOffset)
-
-	--Verify that stuff is at the address
-
-	local _filesAddr = ReadLong(_pointerAddr+0x50, true)
-
-	if _filesAddr == nil then
+function LBoardFinder:FindMenuTask(vtable) --Returns the live spirit menu task of that class, or nil
+	local _list = ReadLong(_taskLists[gameVer]+_menuTaskCategory*8)
+	if _list == 0 then
 		return nil
 	end
-	if _filesAddr == 0 then
-		return nil
-	end
-	
-	--Find pointer for lboard.bin
-	for x = 1, _scanLimit do
-		if ReadString(_filesAddr+0x44, #_lboardFile, true) == _lboardFile then
-			return ReadLong(_filesAddr+0x20, true)
+	local _target = ReadLong(_list, true)-_taskListVtable[gameVer]+vtable[gameVer]
+	local _node = ReadLong(_list+0x10, true)
+	for x = 1, 256 do
+		if _node == 0 then
+			return nil
 		end
-		_filesAddr = ReadLong(_filesAddr + 0x08, true)
+		local _task = ReadLong(_node+0x08, true)
+		if _task ~= 0 and ReadLong(_task, true) == _target then
+			return _task
+		end
+		_node = ReadLong(_node+0x10, true)
 	end
-
-	--Not found
 	return nil
 end
 
---Only run function if we can be confident the board is actually loaded
-local _activeBoard = {0x9E9A40, 0x9E9A30}
-local _activeBoardOffset = 0x490
+function LBoardFinder:InSpiritMenu()
+	return self:FindMenuTask(_modeRootVtable) ~= nil
+end
 
-LBoardFinder.LBoard = nil
+local function FindLboardEntry() --lboard.bin's entry in the board's file group; +0x20 is its data
+	local _group = ReadLong(_fileGroups[gameVer]+ReadByte(_offsetAddr[gameVer])*8)
+	if _group == 0 then
+		return nil
+	end
+	local _entry = ReadLong(_group+0x50, true)
+	for x = 1, _scanLimit do
+		if _entry == 0 then
+			return nil
+		end
+		if ReadString(_entry+0x44, #_lboardFile, true) == _lboardFile then
+			return _entry
+		end
+		_entry = ReadLong(_entry+0x08, true)
+	end
+	return nil
+end
 
+LBoardFinder.LBoard = nil --lboard.bin data
+LBoardFinder.Board = nil --Board object the game built from it
+
+local _linkBoardMode = nil
+local _lboardEntry = nil
+
+--lboard.bin is reloaded from disk, sometimes at a new address, each time Ability Link opens,
+--and the game builds the board from it about 5 frames later
 function LBoardFinder:FinderUpdate()
-	local _activeBoardInfo = GetPointer(_activeBoard[gameVer], _activeBoardOffset)
-	local _activeInfo = ReadArray(_activeBoardInfo, 4, true)
+	local _mode = self:FindMenuTask(_modeLinkBoardVtable)
+	if _mode ~= _linkBoardMode then
+		_linkBoardMode = _mode
+		_lboardEntry = nil
+	end
+	self.LBoard = nil
+	self.Board = nil
+	if _mode == nil then
+		return
+	end
 
-	--Is a spirit board active
-	for x=2, #_activeInfo do
-		if _activeInfo[x] > 0 then --Something other than the link board has been loaded
-			self.LBoard = nil
-			return
+	if _lboardEntry == nil or ReadString(_lboardEntry+0x44, #_lboardFile, true) ~= _lboardFile then
+		_lboardEntry = FindLboardEntry()
+	end
+	if _lboardEntry ~= nil then
+		local _data = ReadLong(_lboardEntry+0x20, true)
+		if _data ~= 0 then
+			self.LBoard = _data
+			if not self:IsPatched() then
+				self:PatchBoards()
+			end
 		end
 	end
 
-	--If we make it here the link board is likely loaded
-	if self.LBoard == nil then --Perform the check
-		self.LBoard = Lboard_Addr()
-		if self.LBoard ~= nil then --Did the check succeed
-			self:PatchBoards()
-			ConsolePrint("Link board loaded")
-		end
+	local _board = ReadLong(_mode+_modeBoardOffset, true)
+	if _board ~= 0 then
+		self.Board = _board
 	end
 end
 
@@ -683,6 +716,28 @@ boardList = {MeowWowBoard, TamaSheepBoard, YoggyRamBoard, KomoryBatBoard,
 			KeebaTigerBoard, MeowjestyBoard, SudoNekuBoard, FrootzCatBoard,
 			UrsaCircusBoard, KabKannonBoard, RRSealBoard, CatanukiBoard,
 			BeatalikeBoard, TubguinAceBoard}
+
+local function FirstRecord(board) --Position and type PatchBoards writes as the board's first record
+	for x=1, #board do
+		for y=1, #board[x] do
+			if board[x][y][1] ~= NT.N then
+				return CoordsToByte({x-1, y-1}), board[x][y][1]
+			end
+		end
+	end
+end
+
+function LBoardFinder:IsPatched()
+	for _, i in ipairs({1, #boardList}) do
+		local _pos, _type = FirstRecord(boardList[i])
+		local _record = self.LBoard+linkBoardOffsets[i]
+		if ReadByte(_record, true) ~= _pos or ReadByte(_record+0x01, true) ~= _type then
+			return false
+		end
+	end
+	return true
+end
+
 function LBoardFinder:PatchBoards() --TODO: Only mod boards of spirits in party
 	for i=1, #boardList do
 		entry = 0
