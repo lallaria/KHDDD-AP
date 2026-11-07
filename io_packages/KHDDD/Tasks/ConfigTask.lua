@@ -63,7 +63,7 @@ function ConfigTask:ParseSlotData(slotType, msgVal)
     end
 end
 
-function ConfigTask:SetDrop()
+function ConfigTask:SetDrop(msgVal)
 	if msgVal[1] == "1" then
 		Configs.EnableDrop = true
 		ConsolePrint("Enabled drop")

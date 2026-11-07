@@ -147,7 +147,7 @@ Configs = {
   FastGoMode = false,
   ExpMult = 10,
   StatBonus = 2,
-  EnableDrop = false
+  EnableDrop = false,
 
   --AP Settings
   Character = 0, --0 for both; 1 for Sora Only; 2 for Riku Only
