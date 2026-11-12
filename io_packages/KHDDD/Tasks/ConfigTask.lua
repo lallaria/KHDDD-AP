@@ -27,6 +27,7 @@ ConfigTask.SlotDataTypes = {
 }
 
 function ConfigTask:ParseSlotData(slotType, msgVal)
+	Configs.GotSlotData = true --We know request was successful if we receive at least one config update
 	if slotType == self.SlotDataTypes.KeybladeStats then
       self:SaveKeybladeStats(msgVal)
     elseif slotType == self.SlotDataTypes.Character then

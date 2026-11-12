@@ -159,7 +159,9 @@ Configs = {
   RemoteItemNotifs = 0,
   VanillaLevels = false,
   EmblemReqs = 0,
-  EnergyLink = false
+  EnergyLink = false,
+
+  GotSlotData = false
 }
 
 ItemOverwrite = {
@@ -478,6 +480,7 @@ MessageTypes = {
   HasSlotData = 16,
   ScoutBoard = 17,
   NodeChecked = 18,
+  RequestSlotData = 19,
   Closed = 20,
 
   RequestingEnergy=21,
@@ -709,6 +712,23 @@ function RunReports()
       writeTxtToGame(ItemOverwrite.glossaryDesc[gameVer], _goalTxt.._reqTxt.._embTxt.._portalTxt.._goTxt, 3)
     end
 
+  elseif Configs.Goal == 2 then --Lucky Emblems
+    local _conditionsMet = 0
+
+    local _goalTxt = "GOAL: Collect Lucky Emblems||Requirements:|"
+
+    local _embTxt = "Required Emblems: "..tostring(_embCnt).."/"..tostring(Configs.EmblemReqs)
+    if _embCnt >= Configs.EmblemReqs then
+      _embTxt = _embTxt.." [COMPLETE]"
+      _conditionsMet = _conditionsMet + 1
+    end
+
+    local _goTxt = ""
+    if _conditionsMet == 1 then
+      _goTxt = "| You have finished the run!"
+    end
+
+    writeTxtToGame(ItemOverwrite.glossaryDesc[gameVer], _goalTxt.._embTxt.._goTxt)
    
   end
 end
@@ -1524,15 +1544,13 @@ function HandleMessage(msg)
     ConfigTask:ParseSlotData(_slotType, _sentVals)
 
   elseif msg.type == MessageTypes.Handshake then
-    if not HandshakeReceived then
-      SendToApClient(MessageTypes.HasSlotData, {"0"})
-    else
-      SendToApClient(MessageTypes.HasSlotData, {"1"})
-    end
     HandshakeReceived = true
     ConsolePrint("Received handshake; Requesting items: "..msg.values[1])
     if msg.values[1] == "True" then
       SendToApClient(MessageTypes.RequestAllItems, {"Requesting Items"})
+      if not Configs.GotSlotData then
+        SendToApClient(MessageTypes.RequestSlotData, {"0"})
+      end
     end
 
 
@@ -1861,7 +1879,6 @@ end
 -- ############################################################
 
 function main()
-
   updateRoomInfo()
 
   MessageHandler:runItemQueue()
