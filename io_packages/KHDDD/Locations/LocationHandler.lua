@@ -287,7 +287,7 @@ function LocationHandler:LordKyroo()
     if Configs.Character == 1 and roomInfo[1] == 0x06 then
       if ReadByte(WorldFlags.prankstersParadise.sora.story[gameVer]) == 0x11 then --World cleared; check kyroo now
         --if ReadByte(WorldFlags.prankstersParadise.sora.story[gameVer]+0x03) == 0x47 then --Lost to Kyroo
-        if not _kyrooPP then  
+        if not _kyrooDefeated then  
           --Start fight in promontory
           if roomInfo[2] == 0x04 and allowKyroo then
             WriteByte(MemoryAddresses.map[gameVer], 0x39)
@@ -339,7 +339,7 @@ function LocationHandler:LordKyroo()
         _kyrooDefeated = true
       end
     elseif Configs.Character == 1 then
-      if _foughtPP[5] == 1 then
+      if _wonPP[5] == 1 then
         SendToApClient(MessageTypes.StoryChecked, {"2650652"})
         SendToApClient(MessageTypes.StoryChecked, {"2650650"})
         _kyrooDefeated = true

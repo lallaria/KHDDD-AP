@@ -121,7 +121,6 @@ function EnergyLinkTask:SaveGauge()
 	local _readBar = ReadFloat(GetPointer(MemoryAddresses.dropPtr[gameVer], MemoryAddresses.dropOffset), true)
 	if _readBar > 0 then
 		self.GaugeValue = _readBar
-		ConsolePrint("Saved Gauge: "..tostring(self.GaugeValue))
 	end
 end
 
