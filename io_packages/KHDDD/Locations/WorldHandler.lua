@@ -196,7 +196,7 @@ function WorldHandler:CheckTT2() --Check for each character's respective TT2 acc
 	if getCharacter() == 0 then --Grant access to Sora TT2 if needed
 		local _soraTT2Val = ReadByte(WorldFlags.traverseTown.sora.story[gameVer]+0x03)
 		if self.WorldsUnlocked.Sora[self.Worlds.TT2] > 0 and _soraTT2Val ~= 0x72 then
-			if ReadByte(WorldFlags.traverseTown.sora.story[gameVer]) ~= 0x31 and _soraTT2Val >= 0x11 then --Player has not beaten tt2
+			if ReadByte(WorldFlags.traverseTown.sora.story[gameVer]) ~= 0x31 and _soraTT2Val >= 0x11 and ReadByte(WorldFlags.traverseTown.sora.story[gameVer]+0x04) == 0x00 then --Player has not beaten tt2
 				WriteByte(WorldFlags.traverseTown.sora.story[gameVer]+0x03, 0x72)
 				--Reset status as well
 				--WriteInt(MemoryAddresses.worldStatusS[gameVer]+self.StatusOffsets.Sora.TT, 0xFFFFFFFD)

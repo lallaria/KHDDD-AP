@@ -770,8 +770,16 @@ function ItemHandler:CraftSpirits(value)
   local _spiritInv = {0xA45A70, 0xA452F0}
   local _spiritOffset = 0x100 --Add this to base address for each spirit in inventory
 
-  --TODO: Make this account for local spirit crafting
-  local _spiritAddr = _spiritInv[gameVer] + (_spiritOffset * (#self.State.Recipes-1))
+  
+  local _spiritAddr = 0
+  for x=0, 100 do --Scan for first empty slot
+    if _spiritAddr == 0 and ReadByte(_spiritInv[gameVer] + (_spiritOffset*x)) == 0 then
+      _spiritAddr = _spiritInv[gameVer] + (_spiritOffset*x)
+    end
+  end
+  if _spiritAddr == 0 then --Default to auto-calc'd slot
+    _spiritAddr = _spiritInv[gameVer] + (_spiritOffset * (#self.State.Recipes-1))
+  end
 
   --Write Spirit Type to inventory
   WriteInt(_spiritAddr, _spiritId)
