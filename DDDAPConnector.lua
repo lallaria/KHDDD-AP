@@ -1351,6 +1351,10 @@ function forceDrop()
   --Manage drop function will trigger the force drop
   keepDropActive = getCharacter()
 
+  if EnergyLinkTask.IsActive then
+    EnergyLinkTask:SaveGauge()
+  end
+
   --Force the drop; set related gauge and bonus time bytes to 0
   --WriteArray(MemoryAddresses.dropEnabler[gameVer], {0x00, 0x00})
   --WriteArray(ptr+0x01, {0x00, 0x00, 0x00}, true) --Gauge value
@@ -1561,7 +1565,7 @@ function HandleMessage(msg)
     PatchTask:RemoteBoardRewards(msg.values[1], msg.values[2], msg.values[3], msg.values[4])
 
   elseif msg.type == MessageTypes.RequestingEnergy then
-    EnergyLinkTask:GotEnergy(tonumber(msg.values[1]))
+    EnergyLinkTask:EnergyFromServer(tonumber(msg.values[1]))
   end
 
 

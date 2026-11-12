@@ -1,14 +1,17 @@
 EnergyLinkTask = {}
 
 EnergyLinkTask.IsActive = false
-EnergyLinkTask.IsPaused = false
 
-EnergyLinkTask.GaugeValue = 0 --Updates on pause or world map to track manual drops
+EnergyLinkTask.GaugeValue = -1 --Updates on pause or world map to track manual drops
 EnergyLinkTask.DPValue = 0 --For when dropping on world map
 EnergyLinkTask.RestoreGauge = -1 --0 if sora had dropped and 1 if riku had dropped
 EnergyLinkTask.ActiveCharacter = 0
 
+EnergyLinkTask.DropToWrite = -1
+
 EnergyLinkTask.UsingItem = false
+
+EnergyLinkTask.NaturalDrop = false
 
 local _dp = {0xA98024} --TODO: EGS
 --Get DP: ReadShort(_dp[gameVer])
@@ -24,26 +27,48 @@ function EnergyLinkTask:Init()
 	self.ActiveCharacter = getCharacter()
 end
 
-local _isDropped = false
 function EnergyLinkTask:Update()
 	if not self.IsActive then
 		return
 	end
 
 	local _charState = ReadByte(GetPointer(MemoryAddresses.deathPtr[gameVer], MemoryAddresses.deathOffset), true)
+	local _dropGauge = ReadFloat(GetPointer(MemoryAddresses.dropPtr[gameVer], MemoryAddresses.dropOffset), true) --+0x0C for bonus time
 
-	if not self.IsPaused then
-		if ReadByte(MemoryAddresses.pauseType[gameVer]) == 0x03 or roomInfo[1] == 0x0B then
-			self:OnPause()
-			self.IsPaused = true
-		end
-	else
-		if ReadByte(MemoryAddresses.pauseType[gameVer]) == 0x00 and roomInfo[1] ~= 0x0B then
-			self.IsPaused = false
+	if ReadByte(MemoryAddresses.pauseType[gameVer]) == 0x03 then --We need to preserve the current gauge value
+		self:SaveGauge() --We need to preserve the current gauge value
+	end
+
+	if roomInfo[1] == 0x0B then --Need to preserve DP on world map since we can't reliably detect dropping here
+		self.DPValue = ReadShort(_dp[gameVer])
+
+		if self.ActiveCharacter ~= getCharacter() then --A drop occurred
+			if self.RestoreGauge == -1 then
+				self.RestoreGauge = math.abs(getCharacter()-1) --Was it Sora or Riku
+				self:SendDP(self.DPValue)
+				self.DPValue = 0
+			end
 		end
 	end
 
-	if not self.IsPaused and ReadByte(MemoryAddresses.enablePause[gameVer]) == 0x00 then
+	if _charState == 0x04 and self.RestoreGauge == -1 then --We have dropped
+		self:OnDrop()
+	end
+
+	if _dropGauge > 0 and self.DropToWrite > -1 and _charState ~= 0x04 and not self.NaturalDrop then --We have energy to write to the drop gauge
+		self:GotEnergy(self.DropToWrite)
+		self.DropToWrite = -1
+	end
+
+	if _charState ~= 0x04 and ReadByte(MemoryAddresses.enablePause[gameVer]) == 0x00 and roomInfo[1] ~= 0x0B then
+		if self.RestoreGauge > -1 then
+			self:Dropped()
+		end
+	end
+
+
+	--Detect if Drop-Me-Not/Never was used
+	if ReadByte(MemoryAddresses.enablePause[gameVer]) == 0x00 then
 		--Can reference animation queue to determine if drop me not/never is used
 		local _animPtr = {0xA37DB8} --TODO: EGS
 		local _animQueueVal = ReadByte(GetPointer(_animPtr[gameVer], 0x570)+0x142, true)
@@ -58,38 +83,8 @@ function EnergyLinkTask:Update()
 				self.UsingItem = false
 			end
 		end
-
 	end
 
-	if roomInfo[1] == 0x0B then
-		if self.ActiveCharacter ~= getCharacter() then --Player dropped
-			self.RestoreGauge = math.abs(getCharacter()-1) --Was it Sora or Riku
-			self:SendDP(self.DPValue)
-			self.DPValue = 0
-		end
-	end
-
-	if not _isDropped and _charState == 0x04 then
-		_isDropped = true
-		self:OnDrop()
-	elseif _isDropped and _charState ~= 0x04 and ReadByte(MemoryAddresses.enablePause[gameVer]) == 0x00 then
-		if self.RestoreGauge > -1 then
-			ConsolePrint("Player Dropped in Invalid area")
-			self:SendDP(self.DPValue)
-			self.DPValue = 0
-			self:Dropped()
-			_isDropped = false
-		end
-	end
-
-	if _charState ~= 0x04 and ReadByte(MemoryAddresses.enablePause[gameVer]) == 0x00 and roomInfo[1] ~= 0x0B then
-		if self.RestoreGauge > -1 then
-			ConsolePrint("Writing Drop Gauge Value")
-			if ReadFloat(GetPointer(MemoryAddresses.dropPtr[gameVer], MemoryAddresses.dropOffset), true) > 0 then
-				self:Dropped()
-			end
-		end
-	end
 end
 
 function EnergyLinkTask:RequestEnergy(itemUsed)
@@ -107,10 +102,19 @@ function EnergyLinkTask:RequestEnergy(itemUsed)
 	SendToApClient(MessageTypes.RequestingEnergy, {tostring(_requestedEnergy)})
 end
 
+function EnergyLinkTask:RequestAllEnergy()
+	SendToApClient(MessageTypes.RequestingEnergy, {tostring(72000)})
+end
+
 function EnergyLinkTask:GotEnergy(amt) --Energy reponse received from server
 	_barAddr = GetPointer(MemoryAddresses.dropPtr[gameVer], MemoryAddresses.dropOffset)
 	local _currentEnergy = ReadFloat(_barAddr, true)
 	WriteFloat(_barAddr, _currentEnergy+amt, true)
+	ConsolePrint("Added to energy")
+end
+
+function EnergyLinkTask:EnergyFromServer(amt)
+	self.DropToWrite = amt
 end
 
 function EnergyLinkTask:SaveGauge()
@@ -137,12 +141,22 @@ function EnergyLinkTask:SendDP(dpAmt)
 end
 
 function EnergyLinkTask:Dropped()
-	ConsolePrint("ATTEMPTING TO OVERWRITE ENERGY")
-	if ReadFloat(GetPointer(MemoryAddresses.dropPtr[gameVer], MemoryAddresses.dropOffset), true) > 0 then
-		self.ActiveCharacter = getCharacter()
-		WriteFloat(GetPointer(MemoryAddresses.dropPtr[gameVer], MemoryAddresses.dropOffset), self.GaugeValue, true)
-		self.RestoreGauge = -1
-		ConsolePrint("SUCCESS")
+	if not timedout then --Player manually dropped and drop gauge needs to be transferred
+		if ReadFloat(GetPointer(MemoryAddresses.dropPtr[gameVer], MemoryAddresses.dropOffset), true) > 0 then
+			self.ActiveCharacter = getCharacter()
+			if self.NaturalDrop then
+				WriteFloat(GetPointer(MemoryAddresses.dropPtr[gameVer], MemoryAddresses.dropOffset), self.DropToWrite, true)
+				self.DropToWrite = -1
+				self.NaturalDrop = false
+				ConsolePrint("Restored using write amount")
+			else
+				WriteFloat(GetPointer(MemoryAddresses.dropPtr[gameVer], MemoryAddresses.dropOffset), self.GaugeValue, true)
+				self.GaugeValue = -1
+				ConsolePrint("Restored using saved amount")
+			end
+			self.RestoreGauge = -1
+			ConsolePrint("SUCCESS")
+		end
 	end
 end
 
@@ -151,10 +165,15 @@ function EnergyLinkTask:OnDrop()
 	self:SendDP(self.DPValue)
 	self.DPValue = 0
 	local _bar = GetPointer(MemoryAddresses.dropPtr[gameVer], MemoryAddresses.dropOffset)
-	if roomInfo[1] == 0x0B or _bar == MemoryAddresses.dropOffset or ReadFloat(_bar, true) > 0 then
-		--Still had gauge; Drop was manual
-		ConsolePrint("PLAYER DROPPED EARLY DOING RESTORE")
-		self.RestoreGauge = getCharacter()
+	
+	--TODO: Detect if gauge timed out naturally
+	self.RestoreGauge = getCharacter()
+
+	if ReadFloat(_bar+0x0C, true) == 0 then --Timer expired naturally
+		ConsolePrint("Player dropped naturally")
+		self.GaugeValue = 0
+		self:RequestAllEnergy()
+		self.NaturalDrop = true
 	end
 end
 
