@@ -22,6 +22,7 @@ PatchTask = require("KHDDD.Tasks.PatchTask")
 local AsmEdits = require("KHDDD.Tools.AsmEdits")
 LBoard = require("KHDDD.Locations.lboard")
 LBoardFinder = require("KHDDD.Locations.Lboard_Finder")
+EnergyLinkTask = require("KHDDD.Tasks.EnergyLinkTask")
 
 LUAGUI_NAME = "DDD AP Connector [Socket]"
 LUAGUI_AUTH = "Lux"
@@ -147,7 +148,7 @@ Configs = {
   FastGoMode = false,
   ExpMult = 10,
   StatBonus = 2,
-  EnableDrop = false,
+  EnableDrop = true,
 
   --AP Settings
   Character = 0, --0 for both; 1 for Sora Only; 2 for Riku Only
@@ -158,7 +159,10 @@ Configs = {
   LocalItemNotifs = 0,
   RemoteItemNotifs = 0,
   VanillaLevels = false,
-  EmblemReqs = 0
+  EmblemReqs = 0,
+  EnergyLink = false,
+
+  GotSlotData = false
 }
 
 ItemOverwrite = {
@@ -477,7 +481,11 @@ MessageTypes = {
   HasSlotData = 16,
   ScoutBoard = 17,
   NodeChecked = 18,
-  Closed = 20
+  RequestSlotData = 19,
+  Closed = 20,
+
+  RequestingEnergy=21,
+  SendingEnergy=22
 }
 HandshakeSent = false
 HandshakeReceived = false
@@ -705,6 +713,23 @@ function RunReports()
       writeTxtToGame(ItemOverwrite.glossaryDesc[gameVer], _goalTxt.._reqTxt.._embTxt.._portalTxt.._goTxt, 3)
     end
 
+  elseif Configs.Goal == 2 then --Lucky Emblems
+    local _conditionsMet = 0
+
+    local _goalTxt = "GOAL: Collect Lucky Emblems||Requirements:|"
+
+    local _embTxt = "Required Emblems: "..tostring(_embCnt).."/"..tostring(Configs.EmblemReqs)
+    if _embCnt >= Configs.EmblemReqs then
+      _embTxt = _embTxt.." [COMPLETE]"
+      _conditionsMet = _conditionsMet + 1
+    end
+
+    local _goTxt = ""
+    if _conditionsMet == 1 then
+      _goTxt = "| You have finished the run!"
+    end
+
+    writeTxtToGame(ItemOverwrite.glossaryDesc[gameVer], _goalTxt.._embTxt.._goTxt)
    
   end
 end
@@ -1319,13 +1344,17 @@ function forceDrop()
   --ConsolePrint("Received forced drop")
   
   --Where are the drop gauge values
-  ptr = GetPointer(MemoryAddresses.dropPtr[gameVer], 0x1B0)
+  --ptr = GetPointer(MemoryAddresses.dropPtr[gameVer], 0x1B0)
 
   --Quickly re-enable dropping
   --WriteArray(MemoryAddresses.dropEnabler, {0x00, 0x00})
-  
+
   --Manage drop function will trigger the force drop
   keepDropActive = getCharacter()
+
+  if EnergyLinkTask.IsActive then
+    EnergyLinkTask:SaveGauge()
+  end
 
   --Force the drop; set related gauge and bonus time bytes to 0
   --WriteArray(MemoryAddresses.dropEnabler[gameVer], {0x00, 0x00})
@@ -1523,15 +1552,13 @@ function HandleMessage(msg)
     ConfigTask:ParseSlotData(_slotType, _sentVals)
 
   elseif msg.type == MessageTypes.Handshake then
-    if not HandshakeReceived then
-      SendToApClient(MessageTypes.HasSlotData, {"0"})
-    else
-      SendToApClient(MessageTypes.HasSlotData, {"1"})
-    end
     HandshakeReceived = true
     ConsolePrint("Received handshake; Requesting items: "..msg.values[1])
     if msg.values[1] == "True" then
       SendToApClient(MessageTypes.RequestAllItems, {"Requesting Items"})
+      if not Configs.GotSlotData then
+        SendToApClient(MessageTypes.RequestSlotData, {"0"})
+      end
     end
 
 
@@ -1540,6 +1567,9 @@ function HandleMessage(msg)
 
   elseif msg.type == MessageTypes.ScoutBoard then
     PatchTask:RemoteBoardRewards(msg.values[1], msg.values[2], msg.values[3], msg.values[4])
+
+  elseif msg.type == MessageTypes.RequestingEnergy then
+    EnergyLinkTask:EnergyFromServer(tonumber(msg.values[1]))
   end
 
 
@@ -1976,7 +2006,6 @@ function timerEnd(funcName)
 end
 
 function _OnFrame()
-
   frameCount = (frameCount+1)%30
   if not gameStarted then
     if frameCount == 0 and ReadByte(MemoryAddresses.world[gameVer]) ~= 0xFF then --Save file is loaded if not on title screen
@@ -2008,6 +2037,8 @@ function _OnFrame()
   StoryHandler:OverwriteStoryVars()
 
   checkPause()
+
+  EnergyLinkTask:Update()
 
   if Configs.LordKyroo then
     LocationHandler:LordKyroo()
