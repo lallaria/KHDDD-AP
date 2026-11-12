@@ -21,6 +21,7 @@ PatchTask = require("KHDDD.Tasks.PatchTask")
 local AsmEdits = require("KHDDD.Tools.AsmEdits")
 LBoard = require("KHDDD.Locations.lboard")
 LBoardFinder = require("KHDDD.Locations.Lboard_Finder")
+EnergyLinkTask = require("KHDDD.Tasks.EnergyLinkTask")
 
 LUAGUI_NAME = "DDD AP Connector [Socket]"
 LUAGUI_AUTH = "Lux"
@@ -146,7 +147,7 @@ Configs = {
   FastGoMode = false,
   ExpMult = 10,
   StatBonus = 2,
-  EnableDrop = false
+  EnableDrop = true,
 
   --AP Settings
   Character = 0, --0 for both; 1 for Sora Only; 2 for Riku Only
@@ -157,7 +158,8 @@ Configs = {
   LocalItemNotifs = 0,
   RemoteItemNotifs = 0,
   VanillaLevels = false,
-  EmblemReqs = 0
+  EmblemReqs = 0,
+  EnergyLink = false
 }
 
 ItemOverwrite = {
@@ -476,7 +478,10 @@ MessageTypes = {
   HasSlotData = 16,
   ScoutBoard = 17,
   NodeChecked = 18,
-  Closed = 20
+  Closed = 20,
+
+  RequestingEnergy=21,
+  SendingEnergy=22
 }
 HandshakeSent = false
 HandshakeReceived = false
@@ -1318,11 +1323,11 @@ function forceDrop()
   --ConsolePrint("Received forced drop")
   
   --Where are the drop gauge values
-  ptr = GetPointer(MemoryAddresses.dropPtr[gameVer], 0x1B0)
+  --ptr = GetPointer(MemoryAddresses.dropPtr[gameVer], 0x1B0)
 
   --Quickly re-enable dropping
   --WriteArray(MemoryAddresses.dropEnabler, {0x00, 0x00})
-  
+
   --Manage drop function will trigger the force drop
   keepDropActive = getCharacter()
 
@@ -1536,6 +1541,9 @@ function HandleMessage(msg)
 
   elseif msg.type == MessageTypes.ScoutBoard then
     PatchTask:RemoteBoardRewards(msg.values[1], msg.values[2], msg.values[3], msg.values[4])
+
+  elseif msg.type == MessageTypes.RequestingEnergy then
+    EnergyLinkTask:GotEnergy(tonumber(msg.values[1]))
   end
 
 
@@ -1853,6 +1861,7 @@ end
 -- ############################################################
 
 function main()
+
   updateRoomInfo()
 
   MessageHandler:runItemQueue()
@@ -1972,7 +1981,6 @@ function timerEnd(funcName)
 end
 
 function _OnFrame()
-
   frameCount = (frameCount+1)%30
   if not gameStarted then
     if frameCount == 0 and ReadByte(MemoryAddresses.world[gameVer]) ~= 0xFF then --Save file is loaded if not on title screen
@@ -2004,6 +2012,8 @@ function _OnFrame()
   StoryHandler:OverwriteStoryVars()
 
   checkPause()
+
+  EnergyLinkTask:Update()
 
   if Configs.LordKyroo then
     LocationHandler:LordKyroo()

@@ -22,7 +22,8 @@ ConfigTask.SlotDataTypes = {
   VanillaLevels = 13,
   EmblemReqs = 14,
   GateReqs = 15,
-  DropGage = 16
+  DropGage = 16,
+  EnergyLink = 17
 }
 
 function ConfigTask:ParseSlotData(slotType, msgVal)
@@ -60,10 +61,20 @@ function ConfigTask:ParseSlotData(slotType, msgVal)
     	self:SetGateReqs(msgVal)
     elseif slotType == self.SlotDataTypes.DropGage then
     	self:SetDrop(msgVal)
+    elseif slotType == self.SlotDataTypes.EnergyLink then
+    	self:SetEnergyLink(msgVal)
     end
 end
 
-function ConfigTask:SetDrop()
+function ConfigTask:SetEnergyLink(msgVal)
+	if msgVal[1] == "1" then
+		Configs.EnergyLink = true
+		ConsolePrint("Enabled energy link")
+		EnergyLinkTask:Init()
+	end
+end
+
+function ConfigTask:SetDrop(msgVal)
 	if msgVal[1] == "1" then
 		Configs.EnableDrop = true
 		ConsolePrint("Enabled drop")

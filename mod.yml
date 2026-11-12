@@ -123,6 +123,10 @@ assets:
   method : copy
   source:
   - name: io_packages/KHDDD/Tasks/PatchTask.lua
+- name: scripts/io_packages/KHDDD/Tasks/EnergyLinkTask.lua
+  method : copy
+  source:
+  - name: io_packages/KHDDD/Tasks/EnergyLinkTask.lua
 - name: game/de/bin/spcom.bin
   method : copy
   source:
