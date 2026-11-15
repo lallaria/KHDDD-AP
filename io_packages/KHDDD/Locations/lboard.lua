@@ -375,12 +375,14 @@ function LBoard:Update()
 		if _inMenu then
 			self:Exit()
 			_inMenu = false
+			dataStorage()
 		end
 		return
 	end
 	if _inMenu == false then
 		self:ChangeItemNames() --Ensure updated item names are used
 		_inMenu = true
+		dataStorage()
 	end
 
 	--Patch lboard.bin as soon as file is loaded
