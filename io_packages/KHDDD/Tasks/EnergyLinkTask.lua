@@ -228,7 +228,8 @@ function EnergyLinkTask:OnDrop()
 	self.RestoreGauge = getCharacter()
 	self.EntryGauge = nil
 
-	if ReadFloat(_bar+0x0C, true) == 0 or inBonusTime() then --Timer expired naturally, or dropped manually in bonus time
+	--Timed out, or dropped in bonus time. The drop clears the bonus flag first; the gauge keeps its value until the post-drop refill
+	if ReadFloat(_bar, true) <= 0 then
 		ConsolePrint("Player dropped naturally")
 		self.GaugeValue = 0
 		self:RequestAllEnergy()
