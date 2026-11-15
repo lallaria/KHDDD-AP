@@ -4,6 +4,7 @@ EnergyLinkTask.IsActive = false
 
 EnergyLinkTask.FieldGauge = 0 --Last gauge outside the world map, for world map drops
 EnergyLinkTask.DPValue = 0 --For when dropping on world map
+EnergyLinkTask.FromMap = false --On the world map, or loading out of it
 EnergyLinkTask.RestoreGauge = -1 --0 if sora had dropped and 1 if riku had dropped
 EnergyLinkTask.ActiveCharacter = 0
 
@@ -76,11 +77,13 @@ function EnergyLinkTask:Update()
 
 	if roomInfo[1] == 0x0B then --Need to preserve DP on world map since we can't reliably detect dropping here
 		self.DPValue = ReadShort(_dp[gameVer])
+		self.FromMap = true
+	end
 
-		if self.ActiveCharacter ~= getCharacter() and self.RestoreGauge == -1 then --A drop occurred
-			self:BeginDrop(math.abs(getCharacter()-1), self.FieldGauge, self.DPValue, false)
-			self.DPValue = 0
-		end
+	--A world map drop skips the drop state, and main() moves roomInfo to the new room in the same pass that changes the character
+	if self.FromMap and self.ActiveCharacter ~= getCharacter() and self.RestoreGauge == -1 then
+		self:BeginDrop(math.abs(getCharacter()-1), self.FieldGauge, self.DPValue, false)
+		self.DPValue = 0
 	end
 
 	if _charState == 0x04 and self.RestoreGauge == -1 then --We have dropped
@@ -96,6 +99,7 @@ function EnergyLinkTask:Update()
 		if self.RestoreGauge > -1 then
 			self:Dropped()
 		end
+		self.FromMap = false
 	end
 
 
